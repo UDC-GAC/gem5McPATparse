@@ -3,8 +3,8 @@
   <component id="system" name="system">
     <!--McPAT will skip the components if number is set to 0 -->
     <param name="number_of_cores" value="1"/>
-    <param name="number_of_L1Directories" value="0"/>
-    <param name="number_of_L2Directories" value="0"/>
+    <param name="number_of_L1Directories" value="1"/>
+    <param name="number_of_L2Directories" value="1"/>
     <param name="number_of_L2s" value="1"/> <!-- This number means how many L2 clusters in each cluster there can be multiple banks/ports -->
     <param name="Private_L2" value="1"/><!--1 Private, 0 shared/coherent -->
     <param name="number_of_L3s" value="0"/> <!-- This number means how many L3 clusters -->
@@ -39,10 +39,10 @@
     <component id="system.core0" name="core0">
       <!-- Core property -->
       <param name="clock_rate" value="3400"/>
-      <param name="vdd" value="1.25"/><!-- 0 means using ITRS default vdd -->
+      <param name="vdd" value="0"/><!-- 0 means using ITRS default vdd -->
       <param name="opt_local" value="0"/> <!-- for cores with unknown timing, set to 0 to force off the opt flag -->
       <param name="instruction_length" value="32"/>
-      <param name="opcode_width" value="16"/>
+      <param name="opcode_width" value="7"/> <!-- Effective number of opcode bits -->
       <param name="x86" value="1"/>
       <param name="micro_opcode_width" value="8"/>
       <param name="machine_type" value="0"/>
