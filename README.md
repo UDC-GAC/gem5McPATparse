@@ -1,5 +1,5 @@
 # gem5ToMcPAT
-[IN DEVELOPMENT] An attempt to adapt gem5 output to McPAT input. This version is implemented in Bison, Flex and C/C++. It also uses the library RapidXML for C++. Based on Fernando Endo's notes [^1], this parser extracts the parameters and statistics from the output of gem5, 'config.ini' and 'stats.txt', and fills the equivalent fields in a XML based on 'template.xml'.
+**[IN DEVELOPMENT]** An attempt to adapt [gem5](http://gem5.org/Main_Page) output to [McPAT](http://www.hpl.hp.com/research/mcpat/) input. This version is implemented in Bison, Flex and C/C++. It also uses the library [RapidXML](http://rapidxml.sourceforge.net/) for C++. Based on Fernando Endo's notes *[1]*, this parser extracts the parameters and statistics from the output of gem5, 'config.ini' and 'stats.txt', and fills the equivalent fields in a XML based on 'template.xml'.
 
 ## Installation
 To install this version:
@@ -27,4 +27,4 @@ It has been tested in a Linux distribution with `gcc version 5.2.1`, `bison vers
 This first version is focused on the compatibility of the output of memory system and core in gem5 with the input of McPAT. Thus, other components such as PCIe will be ignored by the moment.
 
 # References
-[^1]: Fernando Akira Endo. Génération dynamique de code pour l’optimisation énergétique. Architectures Matérielles [cs.AR]. Université Grenoble Alpes, 2015. Français. <NNT : 2015GREAM044>. <tel-01285964> (Appendix A)
+*[1]*: [Fernando Akira Endo. Génération dynamique de code pour l’optimisation énergétique. Architectures Matérielles [cs.AR]. Université Grenoble Alpes, 2015. Français. <NNT : 2015GREAM044>. <tel-01285964> (Appendix A)](https://tel.archives-ouvertes.fr/tel-01285964/document)
