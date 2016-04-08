@@ -1,8 +1,10 @@
 # This makefile allows to compile and run the parser
 
 COMP=g++
-XMLTEMPLATE=tempalte.xml
+XMLTEMPLATE=template.xml
 OUTPUT=out.xml
+CONF=config.ini
+STATS=gem5out.txt
 BIN=gem5ToMcPAT
 FLAGS=-lfl -ly -w
 PARS=parser
@@ -19,4 +21,4 @@ run:
 	./$(BIN) -x $(XMLTEMPLATE) -c $(CONF) -s $(STATS) -o $(OUTPUT)
 
 clean:
-	rm *.yy.c *.tab.c *.out *.tab.h
+	rm *.yy.c *.tab.c *.out *.tab.h stack.hh
