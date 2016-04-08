@@ -124,10 +124,11 @@ static void usage(int i)
 	exit(i);
 }
 
-static int check_file(char *arg, FILE *f)
+static int check_file(char *arg, FILE **f)
 {
-
-    return 1;
+    *f = fopen(arg, "r");
+    
+    return (*f!=NULL);
 }
 
 static void handle_long_options(struct option option, char *arg)
@@ -136,14 +137,16 @@ static void handle_long_options(struct option option, char *arg)
 		usage(0);
 
 	if (!strcmp(option.name, "config")) {
-	        if (!check_file(arg, config_fptr)) {
+	        if (!check_file(arg, &config_fptr)) {
 			printf("'%s': invalid file\n", arg);
+			fclose(config_fptr);
 			usage(-3);
 		}
 	}
 	if (!strcmp(option.name, "stats")) {
-	        if (!check_file(arg, stats_fptr)) {
+	        if (!check_file(arg, &stats_fptr)) {
 			printf("'%s': invalid file\n", arg);
+			fclose(stats_fptr);
 			usage(-3);
 		}
 	}
@@ -167,18 +170,20 @@ static int handle_options(int argc, char **argv)
 			break;
 
 		case 'c':
-                        if (!check_file(optarg, config_fptr)) {
+                        if (!check_file(optarg, &config_fptr)) {
 				printf("'%s': invalid file\n", optarg);
+				fclose(config_fptr);
 				usage(-3);
 			}
 			break;
 
 		case 's':
-         		if (!check_file(optarg, stats_fptr)) {
+         		if (!check_file(optarg, &stats_fptr)) {
 				printf("'%s': invalid file\n", optarg);
+				fclose(stats_fptr);
 				usage(-3);
 			}
-			break;
+		break;
 		case 'x':
 	        case 'o': break;
 		case '?':
@@ -213,7 +218,7 @@ int main(int argc, char *argv[])
     }
     
     // parse config.ini
-    yyin = fopen(argv[4], "r");	
+    yyin = config_fptr;	
     yyparse();
     fclose(yyin);
     
@@ -221,7 +226,7 @@ int main(int argc, char *argv[])
     yyrestart(yyin);
     
     // parse stats.txt
-    yyin = fopen(argv[6], "r");
+    yyin = stats_fptr;
     yyparse();
     fclose(yyin);
     
