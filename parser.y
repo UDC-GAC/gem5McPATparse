@@ -15,6 +15,9 @@ using namespace std;
 #define xml_temp "template.xml"
 #endif
 
+int yylex(void);
+void yyerror(char *s, ...);
+
 %}
 %union {
     int t_int;
@@ -78,4 +81,9 @@ int main(int argc, char *argv[])
     // parse stats.txt
     // fill template.xml
     return 0;
+}
+
+void yyerror(char *s, ...)
+{
+    printf("Error: %s\n", s);
 }
