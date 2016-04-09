@@ -30,7 +30,7 @@ void yyrestart(FILE *yyin);
     double t_double;
     char * t_str;
 }
-%token EQ			
+%token EQ NL			
 %token	<t_int> NUM
 %token	<t_double> FLOAT
 %token	<t_str> STR
@@ -47,8 +47,8 @@ line : /* empty */
 	|	line stats
 ;
 
-config:		STR EQ STR { /* DO NOTHING */}
-	|	 STR EQ NUM { /* DO NOTHING */}
+config:		STR EQ STR NL { /* DO NOTHING */}
+	|	 STR EQ NUM NL { /* DO NOTHING */}
 	;
 
 stats:		STR { /* DO NOTHING */}
@@ -116,9 +116,9 @@ static void usage(int i)
 		"Launch parser gem5ToMcPAT\n"
 		"Options:\n"
 		"  -x <file>, --xmltemplate=<file>: XML template\n"
-		"  -c <file>, --config=<file>: config.ini file (not JSON)\n"
+		"  -c <file>, --config=<file>: config.ini file (not JSON!)\n"
 		"  -s <file>, --stats=<file>: statistics file\n"
-		"  -o <file>, --output=<output>: XML result\n"
+		"  -o <file>, --output=<output>: XML output\n"
 		"  -h, --help: displays this message\n\n"
 	);
 	exit(i);

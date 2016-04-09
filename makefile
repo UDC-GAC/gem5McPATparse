@@ -17,7 +17,6 @@ compile: $(PARS).l $(PARS).y
 	$(COMP) -o $(BIN) lex.yy.c $(PARS).tab.c $(FLAGS)
 
 run:
-	echo "Running parser..."
 	./$(BIN) -x $(XMLTEMPLATE) -c $(CONF) -s $(STATS) -o $(OUTPUT)
 
 clean:
