@@ -21,6 +21,10 @@ extern FILE *yyin;
 
 FILE *config_fptr, *stats_fptr;
 
+struct mcpat_param {
+    int clock_rate;
+};
+
 int yylex(void);
 void yyerror(char *s, ...);
 void yyrestart(FILE *yyin);
@@ -30,7 +34,7 @@ void yyrestart(FILE *yyin);
     double t_double;
     char * t_str;
 }
-%token EQ NL			
+%token EQ NL SYSCLK IG		
 %token	<t_int> NUM
 %token	<t_double> FLOAT
 %token	<t_str> STR
@@ -42,13 +46,15 @@ S : line { printf("finished parsing!\n"); }
   ;
 
 /* left recursion better than right recursion: due to stack reasons */
-line : /* empty */
+line : /* empty */ 
 	|	line config
 	|	line stats
 ;
 
-config:		STR EQ STR NL { /* DO NOTHING */}
-	|	 STR EQ NUM NL { /* DO NOTHING */}
+config:	        IG NL { printf("ignore1\n"); }
+        |	IG EQ NL { printf("ignore2\n"); }
+        |	IG EQ IG NL {printf("ignore3\n"); }
+        |	SYSCLK EQ NUM NL { printf("clk=%d\n",$3); }
 	;
 
 stats:		STR { /* DO NOTHING */}
@@ -226,14 +232,17 @@ int main(int argc, char *argv[])
     yyrestart(yyin);
     
     // parse stats.txt
-    yyin = stats_fptr;
-    yyparse();
-    fclose(yyin);
+    //yyin = stats_fptr;
+    //yyparse();
+    //fclose(yyin);
     
     // fill template.xml
+    //fill_xml();
+    
     exit(0);
 }
 
+/* function to report errors */
 void yyerror(char *s, ...)
 {
     printf("Error: %s\n", s);
