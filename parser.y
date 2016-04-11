@@ -15,13 +15,19 @@ using namespace std;
 
 #ifndef xml_temp
 #define xml_temp "template.xml"
+#endifç
+
+#ifndef MAX(X,Y)
+#define MAX(X,Y) X>Y ? X : Y
 #endif
 
 extern FILE *yyin;
 
 FILE *config_fptr, *stats_fptr;
 
-struct mcpat_struct {
+struct t_mcpat_params {
+    /* for x86 architectures */
+    int isa_x86 = 0;
     /* core parameters */
     int clock_rate;
     int fetch_width;
@@ -43,12 +49,32 @@ struct mcpat_struct {
     int base_stages = 0;
     int nmax_base = 0;
     int max_base = 0;
-    int pipeline_depthx;
-    int pipeline_depthy;
-    /* cache parameters */
+    int pipeline_depth[2];
+    /* branch predictor */
+    int load_predictor[3];
+    int global_predictor[2];
+    int predictor_chooser[2];
+    /* branch predictor buffer */
+    int BTB_config;
+    /* cache parameters: TLB and caches */
+    int number_entries_dtlb;
+    int number_entries_itlb;
+    /* cache l1 */
+    int dcache_config[7];
+    int icache_config[7];
+    int dcache_buffer_sizes[4];
+    int icache_buffer_sizes[4];
+    /* cache l2 */
+    int L2_config[7];
+    int L2_buffer_sizes[4];
+    int l2_clockrate;
 };
 
-struct mcpat_struct *mcpat_param;
+struct t_mcpat_stats {
+};
+
+struct t_mcpat_params *mcpat_param;
+struct t_mcpat_stats *mcpat_stats;
 
 int yylex(void);
 void yyerror(char *s, ...);
@@ -59,7 +85,14 @@ void yyrestart(FILE *yyin);
     double t_double;
     char * t_str;
 }
-%token EQ NL SYSCLK FETCHW DECODEW ISSUEW COMMITW BASE MAXBASE BUFFERS NIQENTRIES NROBENTRIES NINTREGS NFREGS SQENTRIES LQENTRIES RASSIZE
+%token EQ X86 SYSCLK			
+%token FETCHW DECODEW ISSUEW COMMITW BASE MAXBASE BUFFERS NIQENTRIES NROBENTRIES NINTREGS NFREGS SQENTRIES LQENTRIES RASSIZE
+%token LHISTB LCTRB LPREDSIZE GPREDSIZE GCTRB CPREDSIZE	CCTRB
+%token BTBE
+%token TLBD TLBI
+%token IL1SIZE IL1ASSOC I1MSHRS HLIL1 RLIL1 IL1BSIZE
+%token DL1SIZE DL1ASSOC D1MSHRS HLDL1 RLDL1 WBDL1 DL1BSIZE
+%token L2SIZE L2ASSOC L2MSHRS HLL2 RLL2 WBL2 L2BSIZE											
 %token	<t_int> NUM
 %token	<t_double> FLOAT
 %token	<t_str> STR
@@ -76,14 +109,15 @@ line : /* empty */
 	|	line stats
 ;
 
-config:	        
-        	SYSCLK EQ NUM { printf("clk=%d\n",$3); mcpat_param->clock_rate = $3; }
+config:
+                X86 { mcpat_param->isa_x86 = 1; }       
+        |	SYSCLK EQ NUM { printf("clk=%d\n",$3); mcpat_param->clock_rate = $3; }
 	|	FETCHW EQ NUM { printf("FW=%d\n",$3); mcpat_param->fetch_width = $3; }
 	|	DECODEW EQ NUM { printf("FW=%d\n",$3); mcpat_param->decode_width = $3; mcpat_param->issue_width = $3; }
         |	ISSUEW EQ NUM { printf("IW=%d\n", $3); mcpat_param->peak_issue_width = $3; }
         |	COMMITW EQ NUM { printf("CW=%d\n", $3); mcpat_param->commit_width = $3; }
         |	BASE EQ NUM { printf("BASE=%d\n", $3); mcpat_param->base_stages += $3; mcpat_param->nbase++; }
-        |	MAXBASE EQ NUM { printf("maxBASE=%d\n", $3); mcpat_param->base_stages += $3; mcpat_param->nmax_base++; }
+	|	MAXBASE EQ NUM { printf("maxBASE=%d\n", $3); mcpat_param->max_base = MAX(mcpat_param->max_base, $3); mcpat_param->nmax_base++; }
         |	BUFFERS EQ NUM { printf("BUFFERSIZE=%d\n", $3); mcpat_param->instruction_buffer_size = $3; }
 	|	NIQENTRIES EQ NUM { printf("NIQENTRIES=%d\n", $3); if ($3 % 2==0){ mcpat_param->instruction_window_size = $3/2; mcpat_param->fp_instruction_window_size = $3/2; } else { yyerror("numIQEntries must be odd\n"); } }
         |	NROBENTRIES EQ NUM { printf("NROBENTRIES=%d\n", $3); mcpat_param->ROB_size = $3;  }
@@ -92,6 +126,30 @@ config:
         |	SQENTRIES EQ NUM { printf("SQENTRIES=%d\n", $3); mcpat_param->store_buffer_size = $3;  }	
         |	LQENTRIES EQ NUM { printf("IQENTRIES=%d\n", $3); mcpat_param->load_buffer_size = $3; }
         |	RASSIZE EQ NUM { printf("RASSIZE=%d\n", $3); mcpat_param->RAS_size = $3; }
+        |	LHISTB EQ NUM { printf("LHISTB=%d\n", $3); mcpat_param->load_predictor[0] = $3; }
+        |	LCTRB EQ NUM { printf("LCTRB=%d\n", $3); mcpat_param->load_predictor[1] = $3; }
+        |	LPREDSIZE EQ NUM { printf("LPREDSIZE=%d\n", $3); mcpat_param->load_predictor[2] = $3; }
+        |	GPREDSIZE EQ NUM { printf("GPREDSIZE=%d\n", $3); mcpat_param->global_predictor[0] = $3; }
+        |	GCTRB EQ NUM { printf("GCTRB=%d\n", $3); mcpat_param->global_predictor[1] = $3; }
+        |	CPREDSIZE EQ NUM { printf("CPREDSIZE=%d\n", $3); mcpat_param->predictor_chooser[0] = $3; }
+        |	CCTRB EQ NUM { printf("CCTRB=%d\n", $3); mcpat_param->predictor_chooser[1] = $3; }
+        |	BTBE EQ NUM { printf("BTBE=%d\n", $3); mcpat_param->BTB_config = $3; }
+        |	TLBD EQ NUM { printf("TLBD=%d\n", $3); mcpat_param->number_entries_dtlb = $3; }
+	|	TLBI EQ NUM { printf("TLBI=%d\n", $3); mcpat_param->number_entries_itlb = $3; }
+	|	DL1SIZE EQ NUM { printf("DL1SIZE=%d\n", $3); mcpat_param->dcache_config[0] = $3; }
+	|	DL1BSIZE EQ NUM { printf("DL1BSIZE=%d\n", $3); mcpat_param->dcache_config[1] = $3; }		
+	|	DL1ASSOC EQ NUM { printf("DL1ASSOC=%d\n", $3); mcpat_param->dcache_config[2] = $3; mcpat_param->dcache_config[3] = 1; mcpat_param->dcache_config[5] = 32; mcpat_param->dcache_config[6] = 1;}
+	|	D1MSHRS EQ NUM { printf("D1MSHRS=%d\n", $3); mcpat_param->dcache_buffer_sizes[0] = $3; mcpat_param->dcache_buffer_sizes[1] = $3; mcpat_param->dcache_buffer_sizes[2] = $3; }
+	|	WBDL1 EQ NUM { printf("WBDL1=%d\n", $3); mcpat_param->icache_buffer_sizes[3] = $3; }
+	|	IL1SIZE EQ NUM { printf("IL1SIZE=%d\n", $3); mcpat_param->icache_config[0] = $3; }
+	|	IL1BSIZE EQ NUM { printf("IL1BSIZE=%d\n", $3); mcpat_param->icache_config[1] = $3; }		
+	|	IL1ASSOC EQ NUM { printf("IL1ASSOC=%d\n", $3); mcpat_param->icache_config[2] = $3; mcpat_param->icache_config[3] = 1; mcpat_param->icache_config[5] = 32; mcpat_param->icache_config[6] = 1;}
+	|	I1MSHRS EQ NUM { printf("I1MSHRS=%d\n", $3); mcpat_param->icache_buffer_sizes[0] = $3; mcpat_param->icache_buffer_sizes[1] = $3; mcpat_param->icache_buffer_sizes[2] = $3; mcpat_param->icache_buffer_sizes[3] = 0;}
+	|	L2SIZE EQ NUM { printf("L2SIZE=%d\n", $3); mcpat_param->L2_config[0] = $3; }
+	|	L2BSIZE EQ NUM { printf("L2BSIZE=%d\n", $3); mcpat_param->L2_config[1] = $3; }		
+	|	L2ASSOC EQ NUM { printf("L2ASSOC=%d\n", $3); mcpat_param->L2_config[2] = $3; mcpat_param->L2_config[3] = 1; mcpat_param->L2_config[5] = 32; mcpat_param->L2_config[6] = 1;}
+	|	L2MSHRS EQ NUM { printf("L2MSHRS=%d\n", $3); mcpat_param->L2_buffer_sizes[0] = $3; mcpat_param->L2_buffer_sizes[1] = $3; mcpat_param->L2_buffer_sizes[2] = $3; }
+	|	WBL2 EQ NUM { printf("WBL2=%d\n", $3); mcpat_param->L2_buffer_sizes[3] = $3; }	
 	|	error { printf("error you\n"); }
 		
 stats:		STR { /* DO NOTHING */}
@@ -244,7 +302,8 @@ static int handle_options(int argc, char **argv)
 
 void init_structs()
 {
-    mcpat_param = (struct mcpat_struct *) malloc(sizeof(struct mcpat_struct));
+    mcpat_param = (struct t_mcpat_params *) malloc(sizeof(struct t_mcpat_params));
+    mcpat_stats = (struct t_mcpat_stats *) malloc(sizeof(struct t_mcpat_stats));
 }
 
 /////////////////////////////////

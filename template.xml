@@ -90,7 +90,7 @@
       <param name="ROB_size" value="128"/>
       <!-- each in-flight instruction has an entry in ROB -->
       <!-- registers -->
-      <param name="archi_Regs_IRF_size" value="16"/><!-- X86-64 has 16GPR -->			
+      <param name="archi_Regs_IRF_size" value="32"/><!-- X86-64 has 16GPR -->			
       <param name="archi_Regs_FRF_size" value="32"/><!-- MMX + XMM -->
       <!--  if OoO processor, phy_reg number is needed for renaming logic, 
 	   renaming logic is for both integer and floating point insts.  -->
@@ -195,7 +195,12 @@
       <stat name="MUL_cdb_duty_cycle" value="0.3"/>
       <stat name="FPU_cdb_duty_cycle" value="0.3"/>
       <param name="number_of_BPT" value="2"/>
-
+      <component id="system.core0.predictor" name="PBT">
+	<!-- branch predictor; tournament predictor see Alpha implementation -->
+	<param name="load_predictor" value="10,3,1024"/>
+	<param name="global_predictor" value="4096,2"/>
+	<param name="predictor_chooser" value="4096,2"/>
+      </component>
       <component id="system.core0.itlb" name="itlb">
 	<param name="number_entries" value="128"/>
 	<stat name="total_accesses" value="200000"/>
@@ -236,7 +241,7 @@
       <param name="number_of_BTB" value="2"/>
       <component id="system.core0.BTB" name="BTB">
 	<!-- all the buffer related are optional -->
-	<param name="BTB_config" value="5120,4,2,1, 1,3"/> <!--should be 4096 + 1024 -->
+	<param name="BTB_config" value="5120,4,2,2,1,1"/> <!--should be 4096 + 1024 -->
 	<!-- the parameters are capacity,block_width,associativity,bank, throughput w.r.t. core clock, latency w.r.t. core clock,-->
 	<stat name="read_accesses" value="400000"/> <!--See IFU code for guideline -->
 	<stat name="write_accesses" value="0"/>
