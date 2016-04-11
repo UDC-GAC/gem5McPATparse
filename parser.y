@@ -1,3 +1,4 @@
+%error-verbose
 %{
 #include <string.h>
 #include <stdio.h>
@@ -64,10 +65,19 @@ struct t_mcpat_params {
     int icache_config[7];
     int dcache_buffer_sizes[4];
     int icache_buffer_sizes[4];
+
+    int dhit_lat;
+    int dresp_lat;
+    int ihit_lat;
+    int iresp_lat;
+    
     /* cache l2 */
     int L2_config[7];
     int L2_buffer_sizes[4];
     int l2_clockrate;
+    
+    int l2hit_lat;
+    int l2resp_lat;
 };
 
 struct t_mcpat_stats {
@@ -77,7 +87,7 @@ struct t_mcpat_params *mcpat_param;
 struct t_mcpat_stats *mcpat_stats;
 
 int yylex(void);
-void yyerror(char *s, ...);
+ void yyerror(const char *s, ...);
 void yyrestart(FILE *yyin);
 %}
 %union {
@@ -141,15 +151,21 @@ config:
 	|	DL1ASSOC EQ NUM { printf("DL1ASSOC=%d\n", $3); mcpat_param->dcache_config[2] = $3; mcpat_param->dcache_config[3] = 1; mcpat_param->dcache_config[5] = 32; mcpat_param->dcache_config[6] = 1;}
 	|	D1MSHRS EQ NUM { printf("D1MSHRS=%d\n", $3); mcpat_param->dcache_buffer_sizes[0] = $3; mcpat_param->dcache_buffer_sizes[1] = $3; mcpat_param->dcache_buffer_sizes[2] = $3; }
 	|	WBDL1 EQ NUM { printf("WBDL1=%d\n", $3); mcpat_param->icache_buffer_sizes[3] = $3; }
+	|	HLDL1 EQ NUM { printf("HLDL1=%d\n", $3); mcpat_param->dhit_lat = $3; }		
+	|	RLDL1 EQ NUM { printf("RLDL1=%d\n", $3); mcpat_param->dresp_lat = $3; }		
 	|	IL1SIZE EQ NUM { printf("IL1SIZE=%d\n", $3); mcpat_param->icache_config[0] = $3; }
 	|	IL1BSIZE EQ NUM { printf("IL1BSIZE=%d\n", $3); mcpat_param->icache_config[1] = $3; }		
 	|	IL1ASSOC EQ NUM { printf("IL1ASSOC=%d\n", $3); mcpat_param->icache_config[2] = $3; mcpat_param->icache_config[3] = 1; mcpat_param->icache_config[5] = 32; mcpat_param->icache_config[6] = 1;}
 	|	I1MSHRS EQ NUM { printf("I1MSHRS=%d\n", $3); mcpat_param->icache_buffer_sizes[0] = $3; mcpat_param->icache_buffer_sizes[1] = $3; mcpat_param->icache_buffer_sizes[2] = $3; mcpat_param->icache_buffer_sizes[3] = 0;}
+	|	HLIL1 EQ NUM { printf("HLIL1=%d\n", $3); mcpat_param->ihit_lat = $3; }		
+	|	RLIL1 EQ NUM { printf("RLIL1=%d\n", $3); mcpat_param->iresp_lat = $3; }	
 	|	L2SIZE EQ NUM { printf("L2SIZE=%d\n", $3); mcpat_param->L2_config[0] = $3; }
 	|	L2BSIZE EQ NUM { printf("L2BSIZE=%d\n", $3); mcpat_param->L2_config[1] = $3; }		
 	|	L2ASSOC EQ NUM { printf("L2ASSOC=%d\n", $3); mcpat_param->L2_config[2] = $3; mcpat_param->L2_config[3] = 1; mcpat_param->L2_config[5] = 32; mcpat_param->L2_config[6] = 1;}
 	|	L2MSHRS EQ NUM { printf("L2MSHRS=%d\n", $3); mcpat_param->L2_buffer_sizes[0] = $3; mcpat_param->L2_buffer_sizes[1] = $3; mcpat_param->L2_buffer_sizes[2] = $3; }
-	|	WBL2 EQ NUM { printf("WBL2=%d\n", $3); mcpat_param->L2_buffer_sizes[3] = $3; }	
+	|	WBL2 EQ NUM { printf("WBL2=%d\n", $3); mcpat_param->L2_buffer_sizes[3] = $3; }
+	|	HLL2 EQ NUM { printf("HLL2=%d\n", $3); mcpat_param->l2hit_lat = $3; }		
+	|	RLL2 EQ NUM { printf("RLL2=%d\n", $3); mcpat_param->l2resp_lat = $3; }		
 	|	error { printf("error you\n"); }
 		
 stats:		STR { /* DO NOTHING */}
@@ -350,7 +366,7 @@ int main(int argc, char *argv[])
 }
 
 /* function to report errors */
-void yyerror(char *s, ...)
+void yyerror(const char *s, ...)
 {
     printf("Error: %s\n", s);
 }
