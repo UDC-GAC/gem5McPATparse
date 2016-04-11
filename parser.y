@@ -21,9 +21,34 @@ extern FILE *yyin;
 
 FILE *config_fptr, *stats_fptr;
 
-struct mcpat_param {
+struct mcpat_struct {
+    /* core parameters */
     int clock_rate;
+    int fetch_width;
+    int decode_width;
+    int issue_width;
+    int peak_issue_width;
+    int commit_width;
+    int instruction_buffer_size;
+    int instruction_window_size;
+    int fp_instruction_window_size;
+    int ROB_size;
+    int phy_Regs_IRF_size;
+    int phy_Regs_FRF_size;
+    int store_buffer_size;
+    int load_buffer_size;
+    int RAS_size;
+    /* to calculate base */
+    int nbase = 0;
+    int base_stages = 0;
+    int nmax_base = 0;
+    int max_base = 0;
+    int pipeline_depthx;
+    int pipeline_depthy;
+    /* cache parameters */
 };
+
+struct mcpat_struct *mcpat_param;
 
 int yylex(void);
 void yyerror(char *s, ...);
@@ -34,7 +59,7 @@ void yyrestart(FILE *yyin);
     double t_double;
     char * t_str;
 }
-%token EQ NL SYSCLK IG		
+%token EQ NL SYSCLK FETCHW DECODEW ISSUEW COMMITW BASE MAXBASE BUFFERS NIQENTRIES NROBENTRIES NINTREGS NFREGS SQENTRIES LQENTRIES RASSIZE
 %token	<t_int> NUM
 %token	<t_double> FLOAT
 %token	<t_str> STR
@@ -51,12 +76,24 @@ line : /* empty */
 	|	line stats
 ;
 
-config:	        IG NL { printf("ignore1\n"); }
-        |	IG EQ NL { printf("ignore2\n"); }
-        |	IG EQ IG NL {printf("ignore3\n"); }
-        |	SYSCLK EQ NUM NL { printf("clk=%d\n",$3); }
-	;
-
+config:	        
+        	SYSCLK EQ NUM { printf("clk=%d\n",$3); mcpat_param->clock_rate = $3; }
+	|	FETCHW EQ NUM { printf("FW=%d\n",$3); mcpat_param->fetch_width = $3; }
+	|	DECODEW EQ NUM { printf("FW=%d\n",$3); mcpat_param->decode_width = $3; mcpat_param->issue_width = $3; }
+        |	ISSUEW EQ NUM { printf("IW=%d\n", $3); mcpat_param->peak_issue_width = $3; }
+        |	COMMITW EQ NUM { printf("CW=%d\n", $3); mcpat_param->commit_width = $3; }
+        |	BASE EQ NUM { printf("BASE=%d\n", $3); mcpat_param->base_stages += $3; mcpat_param->nbase++; }
+        |	MAXBASE EQ NUM { printf("maxBASE=%d\n", $3); mcpat_param->base_stages += $3; mcpat_param->nmax_base++; }
+        |	BUFFERS EQ NUM { printf("BUFFERSIZE=%d\n", $3); mcpat_param->instruction_buffer_size = $3; }
+	|	NIQENTRIES EQ NUM { printf("NIQENTRIES=%d\n", $3); if ($3 % 2==0){ mcpat_param->instruction_window_size = $3/2; mcpat_param->fp_instruction_window_size = $3/2; } else { yyerror("numIQEntries must be odd\n"); } }
+        |	NROBENTRIES EQ NUM { printf("NROBENTRIES=%d\n", $3); mcpat_param->ROB_size = $3;  }
+        |	NINTREGS EQ NUM { printf("NINTREGS=%d\n", $3); mcpat_param->phy_Regs_IRF_size = $3;  }
+        |	NFREGS EQ NUM { printf("NFREGS=%d\n", $3); mcpat_param->phy_Regs_FRF_size = $3; }
+        |	SQENTRIES EQ NUM { printf("SQENTRIES=%d\n", $3); mcpat_param->store_buffer_size = $3;  }	
+        |	LQENTRIES EQ NUM { printf("IQENTRIES=%d\n", $3); mcpat_param->load_buffer_size = $3; }
+        |	RASSIZE EQ NUM { printf("RASSIZE=%d\n", $3); mcpat_param->RAS_size = $3; }
+	|	error { printf("error you\n"); }
+		
 stats:		STR { /* DO NOTHING */}
 	;
 
@@ -205,6 +242,11 @@ static int handle_options(int argc, char **argv)
 	return 0;
 }
 
+void init_structs()
+{
+    mcpat_param = (struct mcpat_struct *) malloc(sizeof(struct mcpat_struct));
+}
+
 /////////////////////////////////
 // main function		      
 int main(int argc, char *argv[])
@@ -222,6 +264,8 @@ int main(int argc, char *argv[])
 	printf ("\n");
 	usage(-2);
     }
+
+    init_structs();
     
     // parse config.ini
     yyin = config_fptr;	
@@ -230,11 +274,15 @@ int main(int argc, char *argv[])
     
     // to clean yyin
     yyrestart(yyin);
+
+    //check_params();
     
     // parse stats.txt
     //yyin = stats_fptr;
     //yyparse();
     //fclose(yyin);
+
+    //check_stats();
     
     // fill template.xml
     //fill_xml();
