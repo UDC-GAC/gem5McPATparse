@@ -202,7 +202,7 @@ void yyrestart(FILE *yyin);
 %start S 			
 %%
 // rules
-S : line { printf("finished parsing!\n"); }
+S : line { printf("finished parsing!\n\n"); }
   ;
 
 /* left recursion better than right recursion: due to stack reasons */
