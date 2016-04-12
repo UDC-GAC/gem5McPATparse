@@ -197,7 +197,6 @@ void yyrestart(FILE *yyin);
 %token L2_ACC L2_MISS L2_WRACC L2_WRMISS L2_WRBACK L2_WRBMISS	     				
 %token	<t_int> NUM
 %token	<t_double> FLOAT
-%token	<t_str> STR
 // tokens types etc
 %start S 			
 %%
@@ -289,7 +288,7 @@ stats:		DECODINSTS WS NUM { printf("DECODED INSTRUCTIONS: %d\n",$3); mcpat_stats
 	|	INTDIV WS NUM { printf("INTDIV: %d\n",$3); mcpat_stats->IntDiv *= $3; }
         |	INTMULT WS NUM { printf("INTMULT: %d\n",$3); mcpat_stats->IntMult *= $3; }
 	|	INT_ALU_ACC WS NUM { printf("INT_ALU_ACC: %d\n",$3); mcpat_stats->ialu_accesses = $3; }
-	|	FP_ALU_ACC WS NUM { printf("FP_ALU_ACC: %d\n",$3); mcpat_stats->fpu_accesses = $3; mcpat_stats->cdb_fpu_accesses = $3; }	|	BTBLKUP WS NUM { printf("BTBLKUP: %d\n",$3); mcpat_stats->btb_read_accesses = $3; }
+	|	FP_ALU_ACC WS NUM { printf("FP_ALU_ACC: %d\n",$3); mcpat_stats->fpu_accesses = $3; mcpat_stats->cdb_fpu_accesses = $3; }       |	BTBLKUP WS NUM { printf("BTBLKUP: %d\n",$3); mcpat_stats->btb_read_accesses = $3; }
 	|	BTBUP WS NUM { printf("BTBUP: %d\n",$3); mcpat_stats->btb_write_accesses = $3; }
 	|	DTB_MISS WS NUM { printf("DTB_MISS: %d\n",$3); mcpat_stats->dtlb_total_misses = $3; }
 	|	DTB_ACC WS NUM { printf("DTB_ACC: %d\n",$3); mcpat_stats->dtlb_total_accesses = $3; }

@@ -753,17 +753,6 @@ I1                  "system.cpu.icache."
     return WS;
 }
 
-<VALUE>{letter}+ {
-    yylval.t_str = yytext;
-    if (PREV_STATE!=-1) {
-       BEGIN(PREV_STATE);
-       PREV_STATE = -1;
-    } else {
-       BEGIN(INITIAL);
-    }
-    return STR;
-}
-
 <VALUE>{digit}+ {
     yylval.t_int = atoi(yytext);
     if (PREV_STATE!=-1) {
