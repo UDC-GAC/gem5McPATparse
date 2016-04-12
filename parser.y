@@ -9,6 +9,7 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <math.h>
 #include "lib/rapidxml.hpp"
 
 using namespace rapidxml;
@@ -16,13 +17,16 @@ using namespace std;
 
 #ifndef xml_temp
 #define xml_temp "template.xml"
-#endifç
+#endif
 
 #ifndef MAX(X,Y)
 #define MAX(X,Y) X>Y ? X : Y
 #endif
 
+#define MAX_NUM 1000
+
 extern FILE *yyin;
+extern int yylineno;
 
 FILE *config_fptr, *stats_fptr;
 
@@ -52,7 +56,7 @@ struct t_mcpat_params {
     int max_base = 0;
     int pipeline_depth[2];
     /* branch predictor */
-    int load_predictor[3];
+    int load_predictor[3] = {0};
     int global_predictor[2];
     int predictor_chooser[2];
     /* branch predictor buffer */
@@ -78,16 +82,93 @@ struct t_mcpat_params {
     
     int l2hit_lat;
     int l2resp_lat;
+
+    /* ALUs latencies */
+    int lat_IntDiv; //TODO
+    int lat_IntMult; //TODO
 };
 
 struct t_mcpat_stats {
+    /* core statistics */
+    int total_instructions;
+    int branch_instructions;
+    int branch_mispredictions;
+    int load_instructions;
+    int store_instructions;
+    int committed_int_instructions;
+    int committed_fp_instructions;
+    double pipeline_duty_cycle;
+    int total_cycles;
+    int idle_cycles;
+    int busy_cycles;
+    int ROB_reads;
+    int ROB_writes;
+    int rename_reads;
+    int rename_writes;
+    int fp_rename_reads;
+    int fp_rename_writes;
+    int inst_window_reads;
+    int inst_window_writes;
+    int inst_window_wakeup_accesses;
+
+    int fp_inst_window_reads;
+    int fp_inst_window_writes;
+    int fp_inst_window_wakeup_accesses;
+    int int_regfile_reads;
+    int int_regfile_writes;
+    int float_regfile_reads;
+    int float_regfile_writes;
+    int function_calls;
+    /* formulas */
+    int ialu_accesses;
+    int fpu_accesses;
+    int mul_accesses;
+    int cdb_alu_accesses;
+    int cdb_mul_accesses;
+    int cdb_fpu_accesses;
+    /* btb stats */
+    int btb_read_accesses;
+    int btb_write_accesses;
+    /* tlb L1 */
+    int tlb_total_accesses;
+    int tlb_total_misses;
+    /* l1 cache */
+    int l1_read_accesses;
+    int l1_write_accesses;
+    int l1_read_misses;
+    int l1_write_misses;
+    /* l2 cache */
+    int l2_read_accesses;
+    int l2_write_accesses;
+    int l2_read_misses;
+    int l2_write_misses;
+
+    /* aux: default values */
+    int IntDiv = 20; //todo
+    int IntMult = 3; //todo
+    int overall_access[3] = {0};
+    int overall_misses[3] = {0};
+    int WriteReq_access[3] = {0};
+    int WriteReq_hits[3] = {0};
+    int WriteBack_accesses[3] = {0};
+    int WriteReq_misses[3] = {0};
+    int WriteBack_misses[3] = {0};
+};
+
+struct t_error {
+    int n_stat;
+    int err_stat[MAX_NUM];
+
+    int n_config;
+    int err_config[MAX_NUM];
 };
 
 struct t_mcpat_params *mcpat_param;
 struct t_mcpat_stats *mcpat_stats;
+struct t_error *error_list;
 
 int yylex(void);
- void yyerror(const char *s, ...);
+void yyerror(const char *s, ...);
 void yyrestart(FILE *yyin);
 %}
 %union {
@@ -95,14 +176,18 @@ void yyrestart(FILE *yyin);
     double t_double;
     char * t_str;
 }
-%token EQ X86 SYSCLK			
+%token EQ WS
+%token X86 SYSCLK			
 %token FETCHW DECODEW ISSUEW COMMITW BASE MAXBASE BUFFERS NIQENTRIES NROBENTRIES NINTREGS NFREGS SQENTRIES LQENTRIES RASSIZE
 %token LHISTB LCTRB LPREDSIZE GPREDSIZE GCTRB CPREDSIZE	CCTRB
 %token BTBE
 %token TLBD TLBI
 %token IL1SIZE IL1ASSOC I1MSHRS HLIL1 RLIL1 IL1BSIZE
 %token DL1SIZE DL1ASSOC D1MSHRS HLDL1 RLDL1 WBDL1 DL1BSIZE
-%token L2SIZE L2ASSOC L2MSHRS HLL2 RLL2 WBL2 L2BSIZE											
+%token L2SIZE L2ASSOC L2MSHRS HLL2 RLL2 WBL2 L2BSIZE
+
+%token DECODINSTS BRANCHPRED BRANCHERR IEWLOAD IEWSTORE	CINT CFP IPC NCYCLES ICYCLES ROBREADS ROBWRITES	RE_INT_LKUP RE_INT_OP RE_FP_LKUP RE_FP_OP IQ_INT_R IQ_INT_W IQ_INT_WA IQ_FP_QR IQ_FP_QW IQ_FP_QWA INT_RG_R INT_RG_W FP_RG_R FP_RG_W COMCALLS INTDIV INTMULT INT_ALU_ACC FP_ALU_ACC
+			
 %token	<t_int> NUM
 %token	<t_double> FLOAT
 %token	<t_str> STR
@@ -138,7 +223,7 @@ config:
         |	RASSIZE EQ NUM { printf("RASSIZE=%d\n", $3); mcpat_param->RAS_size = $3; }
         |	LHISTB EQ NUM { printf("LHISTB=%d\n", $3); mcpat_param->load_predictor[0] = $3; }
         |	LCTRB EQ NUM { printf("LCTRB=%d\n", $3); mcpat_param->load_predictor[1] = $3; }
-        |	LPREDSIZE EQ NUM { printf("LPREDSIZE=%d\n", $3); mcpat_param->load_predictor[2] = $3; }
+|	LPREDSIZE EQ NUM { printf("LPREDSIZE=%d\n", $3); mcpat_param->load_predictor[2] = $3; if (mcpat_param->load_predictor[0]==0) {mcpat_param->load_predictor[0] = (int) floor(log2((double) $3)); } }
         |	GPREDSIZE EQ NUM { printf("GPREDSIZE=%d\n", $3); mcpat_param->global_predictor[0] = $3; }
         |	GCTRB EQ NUM { printf("GCTRB=%d\n", $3); mcpat_param->global_predictor[1] = $3; }
         |	CPREDSIZE EQ NUM { printf("CPREDSIZE=%d\n", $3); mcpat_param->predictor_chooser[0] = $3; }
@@ -168,7 +253,36 @@ config:
 	|	RLL2 EQ NUM { printf("RLL2=%d\n", $3); mcpat_param->l2resp_lat = $3; }		
 	|	error { printf("error you\n"); }
 		
-stats:		STR { /* DO NOTHING */}
+stats:		DECODINSTS WS NUM { printf("DECODED INSTRUCTIONS: %d\n",$3); mcpat_stats->total_instructions = $3; }
+	|	BRANCHPRED WS NUM { printf("BRANCH: %d\n",$3); mcpat_stats->branch_instructions = $3; }
+	|	BRANCHERR WS NUM { printf("BRANCHERR: %d\n",$3); mcpat_stats->branch_mispredictions = $3; }
+	|	IEWLOAD WS NUM { printf("IEWLOAD: %d\n",$3); mcpat_stats->load_instructions = $3; }
+	|	IEWSTORE WS NUM { printf("IEWSTORE: %d\n",$3); mcpat_stats->store_instructions = $3; }
+	|	CINT WS NUM { printf("CINT: %d\n",$3); mcpat_stats->committed_int_instructions = $3; }
+	|	CFP WS NUM { printf("CFP: %d\n",$3); mcpat_stats->committed_fp_instructions = $3; }
+	|	IPC WS FLOAT { printf("IPC: %f\n",$3); mcpat_stats->pipeline_duty_cycle = $3; }
+	|	NCYCLES WS NUM { printf("NCYCLES: %d\n",$3); mcpat_stats->total_cycles = $3; }
+	|	ICYCLES WS NUM { printf("ICYCLES: %d\n",$3); mcpat_stats->idle_cycles = $3; }
+	|	ROBREADS WS NUM { printf("ROBREADS: %d\n",$3); mcpat_stats->ROB_reads = $3; }			       
+	|	ROBWRITES WS NUM { printf("ROBWRITES: %d\n",$3); mcpat_stats->ROB_writes = $3; }
+	|	RE_INT_LKUP WS NUM { printf("RE_INT_LKUP: %d\n",$3); mcpat_stats->rename_reads = $3; }
+	|	RE_INT_OP WS NUM { printf("RE_INT_OP: %d\n",$3); mcpat_stats->rename_writes = $3; }
+	|	RE_FP_LKUP WS NUM { printf("RE_FP_LKUP: %d\n",$3); mcpat_stats->fp_rename_reads = $3; }
+	|	RE_FP_OP WS NUM { printf("RE_FP_OP: %d\n",$3); mcpat_stats->fp_rename_writes = $3; }
+	|	IQ_INT_R WS NUM { printf("IQ_INT_R: %d\n",$3); mcpat_stats->inst_window_reads = $3; }
+	|	IQ_INT_W WS NUM { printf("IQ_INT_W: %d\n",$3); mcpat_stats->inst_window_writes = $3; }
+	|	IQ_INT_WA WS NUM { printf("IQ_INT_WA: %d\n",$3); mcpat_stats->inst_window_wakeup_accesses = $3; }				|	IQ_FP_QR WS NUM { printf("IQ_FP_QR: %d\n",$3); mcpat_stats->fp_inst_window_reads = $3; }
+	|	IQ_FP_QW WS NUM { printf("IQ_FP_QW: %d\n",$3); mcpat_stats->fp_inst_window_writes = $3; }
+	|	IQ_FP_QWA WS NUM { printf("IQ_FP_QWA: %d\n",$3); mcpat_stats->fp_inst_window_wakeup_accesses = $3; }
+	|	INT_RG_R WS NUM { printf("INT_RG_R: %d\n",$3); mcpat_stats->int_regfile_reads = $3; }
+        |	INT_RG_W WS NUM { printf("INT_RG_W: %d\n",$3); mcpat_stats->int_regfile_writes = $3; }
+	|	FP_RG_R WS NUM { printf("FP_RG_R: %d\n",$3); mcpat_stats->float_regfile_reads = $3; }
+	|	FP_RG_W WS NUM { printf("FP_RG_W: %d\n",$3); mcpat_stats->float_regfile_writes = $3; }
+	|	COMCALLS WS NUM { printf("COMCALLS: %d\n",$3); mcpat_stats->function_calls = $3; }
+	|	INTDIV WS NUM { printf("INTDIV: %d\n",$3); mcpat_stats->IntDiv *= $3; }
+        |	INTMULT WS NUM { printf("INTMULT: %d\n",$3); mcpat_stats->IntMult *= $3; }
+	|	INT_ALU_ACC WS NUM { printf("INT_ALU_ACC: %d\n",$3); mcpat_stats->ialu_accesses = $3; }
+	|	FP_ALU_ACC WS NUM { printf("FP_ALU_ACC: %d\n",$3); mcpat_stats->fpu_accesses = $3; mcpat_stats->cdb_fpu_accesses = $3; }		
 	;
 
 %%
@@ -320,6 +434,13 @@ void init_structs()
 {
     mcpat_param = (struct t_mcpat_params *) malloc(sizeof(struct t_mcpat_params));
     mcpat_stats = (struct t_mcpat_stats *) malloc(sizeof(struct t_mcpat_stats));
+
+    error_list = (struct t_error *) malloc(sizeof(struct t_error));
+}
+
+void display_errors()
+{
+
 }
 
 /////////////////////////////////
@@ -343,24 +464,22 @@ int main(int argc, char *argv[])
     init_structs();
     
     // parse config.ini
-    yyin = config_fptr;	
+    yyin = config_fptr;
     yyparse();
     fclose(yyin);
     
     // to clean yyin
     yyrestart(yyin);
-
-    //check_params();
-    
-    // parse stats.txt
-    //yyin = stats_fptr;
-    //yyparse();
-    //fclose(yyin);
+    yyin = stats_fptr;
+    yyparse();
+    fclose(yyin);
 
     //check_stats();
     
     // fill template.xml
     //fill_xml();
+
+    // display_errors();
     
     exit(0);
 }
@@ -368,5 +487,5 @@ int main(int argc, char *argv[])
 /* function to report errors */
 void yyerror(const char *s, ...)
 {
-    printf("Error: %s\n", s);
+    printf("%d: error: %s\n", yylineno, s);
 }

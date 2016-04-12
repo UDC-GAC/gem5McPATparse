@@ -2,6 +2,7 @@
 %{
 #include "parser.tab.h"
 
+/* THIS WAY IS POSSIBLE TO RETURN TO PREVIOUS STATE */
 int PREV_STATE = -1;
 
 %}					
@@ -19,12 +20,15 @@ int PREV_STATE = -1;
 %x L2
 %x L2TAGS
 
+%x DELIM			
 %x VALUE
 						
 digit   	    [0-9]
+double              {digit}+"."{digit}+			
 letter              [a-zA-Z]
+ws                  [ ]			
 eq                  "="
-ignore              [a-zA-Z0-9 \-\/\[\]\.\_\:]+					
+ignore              [a-zA-Z0-9\-\/\[\]\.\_\:\#\(\)\+\,\%\'\;]+					
 fetchWidth          "fetchWidth"
 decodeWidth         "decodeWidth"
 issueWidth          "issueWidth"
@@ -52,8 +56,15 @@ gPredictorSize      "globalPredictorSize"
 gCtrBits            "globalCtrBits"
 cPredictorSize      "choicePredictorSize"
 cCtrBits            "choiceCtrBits"
-BTBEntries          "BTBEntries"								
-%%
+BTBEntries          "BTBEntries"
+CPU                 "system.cpu."
+SYS                 "system."
+SL2                 "system.l2"
+DTB                 "system.cpu.dtb_walker_cache.tags."
+ITB                 "system.cpu.itb_walker_cache.tags."
+D1                  "system.cpu.dcache."
+I1                  "system.cpu.icache."
+%%			
 
     /* CLOCK */
 <INITIAL>"[system.clk_domain]\n" {
@@ -299,7 +310,7 @@ BTBEntries          "BTBEntries"
 }
 
 <IL1>"size" {
-        printf("size IL1\n");
+        /* printf("size IL1\n"); */
         BEGIN(VALUE);
         return IL1SIZE;
 }
@@ -408,7 +419,7 @@ BTBEntries          "BTBEntries"
 }
 
 <INITIAL>{d2RenameDelay} {
-        printf("d2RenameDelay\n");
+        /* printf("d2RenameDelay\n"); */
         BEGIN(VALUE);
         return BASE;        
 }
@@ -449,10 +460,284 @@ BTBEntries          "BTBEntries"
         return MAXBASE;       
 }
 
+    /* ====== STATISTICS ====== */
+
+<INITIAL>{CPU}"decode.DecodedInsts" {
+    BEGIN(DELIM);
+    return DECODINSTS;
+}
+
+<INITIAL>{CPU}"branchPred.condPredicted" {
+    BEGIN(DELIM);
+    return BRANCHPRED;
+}
+
+<INITIAL>{CPU}"branchPred.condIncorrect" {
+    BEGIN(DELIM);
+    return BRANCHERR;
+}
+
+<INITIAL>{CPU}"iew.iewExecLoadInsts" {
+    BEGIN(DELIM);
+    return IEWLOAD;
+}
+
+<INITIAL>{CPU}"iew.exec_refs" {
+    BEGIN(DELIM);
+    return IEWSTORE;
+}
+
+<INITIAL>{CPU}"commit.int_insts" {
+    BEGIN(DELIM);
+    return CINT;
+}
+
+<INITIAL>{CPU}"commit.fp_insts" {
+    BEGIN(DELIM);
+    return CFP;
+}
+
+<INITIAL>{CPU}"ipc_total" {
+    BEGIN(DELIM);
+    return IPC;
+}
+
+<INITIAL>{CPU}"numCycles" {
+    BEGIN(DELIM);
+    return NCYCLES;
+}
+
+<INITIAL>{CPU}"idleCycles" {
+    BEGIN(DELIM);
+    return ICYCLES;
+}
+
+<INITIAL>{CPU}"rob.rob_reads" {
+    BEGIN(DELIM);
+    return ROBREADS;
+}
+
+<INITIAL>{CPU}"rob.rob_writes" {
+    BEGIN(DELIM);
+    return ROBWRITES;
+}
+
+<INITIAL>{CPU}"rename.int_rename_lookups" {
+    BEGIN(DELIM);
+    return RE_INT_LKUP;
+}
+
+<INITIAL>{CPU}"rename.int_rename_operands" {
+    BEGIN(DELIM);
+    return RE_INT_OP;
+}
+
+<INITIAL>{CPU}"rename.fp_rename_lookups" {
+    BEGIN(DELIM);
+    return RE_FP_LKUP;
+}
+
+<INITIAL>{CPU}"rename.fp_rename_operands" {
+    BEGIN(DELIM);
+    return RE_FP_OP;
+}
+
+<INITIAL>{CPU}"iq.int_inst_queue_reads" {
+    BEGIN(DELIM);
+    return IQ_INT_R;
+}
+
+<INITIAL>{CPU}"iq.int_inst_queue_writes" {
+    BEGIN(DELIM);
+    return IQ_INT_W;
+}
+
+<INITIAL>{CPU}"iq.int_inst_queue_wakeup_accesses" {
+    BEGIN(DELIM);
+    return IQ_INT_WA;
+}
+
+<INITIAL>{CPU}"iq.fp_inst_queue_reads" {
+    BEGIN(DELIM);
+    return IQ_FP_QR;
+}
+
+<INITIAL>{CPU}"iq.fp_inst_queue_writes" {
+    BEGIN(DELIM);
+    return IQ_FP_QW;
+}
+
+<INITIAL>{CPU}"iq.fp_inst_queue_wakeup_accesses" {
+    BEGIN(DELIM);
+    return IQ_FP_QWA;
+}
+
+<INITIAL>{CPU}"int_regfile_reads" {
+    BEGIN(DELIM);
+    return INT_RG_R;
+}
+
+<INITIAL>{CPU}"int_regfile_writes" {
+    BEGIN(DELIM);
+    return INT_RG_W;
+}
+
+<INITIAL>{CPU}"fp_regfile_reads" {
+    BEGIN(DELIM);
+    return FP_RG_R;
+}
+
+<INITIAL>{CPU}"fp_regfile_writes" {
+    BEGIN(DELIM);
+    return FP_RG_W;
+}
+
+<INITIAL>{CPU}"commit.function_calls" {
+    BEGIN(DELIM);
+    return COMCALLS;
+}
+
+<INITIAL>{CPU}"iq.FU_type_0::IntDiv" {
+    BEGIN(DELIM);
+    return INTDIV;
+}
+
+<INITIAL>{CPU}"iq.FU_type_0::IntMult" {
+    BEGIN(DELIM);
+    return INTMULT;
+}
+
+<INITIAL>{CPU}"iq.int_alu_accesses" {
+    BEGIN(DELIM);
+    return INT_ALU_ACC;
+}
+
+<INITIAL>{CPU}"iq.fp_alu_accesses" {
+    BEGIN(DELIM);
+    return FP_ALU_ACC;
+}
+
+    /* BTB */
+<INITIAL>{CPU}"branchPred.BTBLookups" {
+    BEGIN(DELIM);
+    return BTBLKUP;
+}
+
+<INITIAL>{CPU}"branchPred.BTBUpdates" {
+    BEGIN(DELIM);
+    return BTBUP;
+}
+
+    /* TLBs */
+<INITIAL>{DTB}"replacements" {
+    BEGIN(DELIM);
+    return DTB_MISS;
+}
+
+<INITIAL>{DTB}"data_accesses" {
+    BEGIN(DELIM);
+    return DTB_ACC;
+}
+
+<INITIAL>{ITB}"replacements" {
+    BEGIN(DELIM);
+    return ITB_MISS;
+}
+
+<INITIAL>{ITB}"data_accesses" {
+    BEGIN(DELIM);
+    return ITB_ACC;
+}
+
+    /* L1 CACHES */
+<INITIAL>{D1}"overall_accesses::total" {
+    BEGIN(DELIM);
+    return D1_ACC;
+}
+
+<INITIAL>{D1}"overall_misses::total" {
+    BEGIN(DELIM);
+    return D1_MISS;
+}
+
+<INITIAL>{D1}"WriteReq_accesses::total" {
+    BEGIN(DELIM);
+    return D1_WRACC;
+}
+
+<INITIAL>{D1}"writebacks::total" {
+    BEGIN(DELIM);
+    return D1_WRBACK;
+}
+
+<INITIAL>{D1}"WriteReq_misses::total" {
+    BEGIN(DELIM);
+    return D1_WRMISS;
+}
+
+<INITIAL>{D1}"WriteReq_hits::total" {
+    BEGIN(DELIM);
+    return D1_WRHITS;
+}
+
+    /* ICACHE */
+<INITIAL>{I1}"overall_accesses::total" {
+    BEGIN(DELIM);
+    return I1_ACC;
+}
+
+<INITIAL>{I1}"overall_misses::total" {
+    BEGIN(DELIM);
+    return I1_MISS;
+}
+
+<INITIAL>{I1}"WriteReq_accesses::total" {
+    BEGIN(DELIM);
+    return I1_WRACC;
+}
+
+<INITIAL>{I1}"writebacks::total" {
+    BEGIN(DELIM);
+    return I1_WRBACK;
+}
+
+<INITIAL>{I1}"WriteReq_misses::total" {
+    BEGIN(DELIM);
+    return I1_WRMISS;
+}
+
+<INITIAL>{I1}"WriteReq_hits::total" {
+    BEGIN(DELIM);
+    return I1_WRHITS;
+}
+
+    /* L2 CACHE */
+<INITIAL>{SL2}"overall_accesses::total" {
+    BEGIN(DELIM);
+    return L2_ACC;
+}
+
+<INITIAL>{SL2}"overall_misses::total" {
+    BEGIN(DELIM);
+    return L2_MISS;
+}
+
+<INITIAL>{SL2}"WriteReq_accesses::total" {
+    BEGIN(DELIM);
+    return L2_WRACC;
+}
+
+
+
     /* OBTAINING VALUES DESIRED */
 
 <VALUE>{eq} {
         return EQ;
+}
+
+<DELIM>{ws}+ {
+    BEGIN(VALUE);
+    return WS;
 }
 
 <VALUE>{letter}+ {
@@ -477,8 +762,19 @@ BTBEntries          "BTBEntries"
     return NUM;
 }
 
+<VALUE>{double} {
+    yylval.t_double = atof(yytext);
+    if (PREV_STATE!=-1) {
+       BEGIN(PREV_STATE);
+       PREV_STATE = -1;
+    } else {
+       BEGIN(INITIAL);
+    }
+    return FLOAT;
+}
+
     /* WHEN NOTHING ELSE MATCHES */
-<*>{ignore}|{eq}|"\n"            { /* DO NOTHING */ }
+<*>{ignore}|{eq}|"\n"|" "           { /* DO NOTHING */ }
 <*>.                                { printf("error: %s\n", yytext); }
 %%
 
