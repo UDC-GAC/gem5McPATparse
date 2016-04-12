@@ -130,8 +130,10 @@ struct t_mcpat_stats {
     int btb_read_accesses;
     int btb_write_accesses;
     /* tlb L1 */
-    int tlb_total_accesses;
-    int tlb_total_misses;
+    int dtlb_total_accesses;
+    int dtlb_total_misses;
+    int itlb_total_accesses;
+    int itlb_total_misses;
     /* l1 cache */
     int l1_read_accesses;
     int l1_write_accesses;
@@ -149,10 +151,10 @@ struct t_mcpat_stats {
     int overall_access[3] = {0};
     int overall_misses[3] = {0};
     int WriteReq_access[3] = {0};
-    int WriteReq_hits[3] = {0};
-    int WriteBack_accesses[3] = {0};
+    int WriteReq_hits[2] = {0}; // i1/d1
     int WriteReq_misses[3] = {0};
-    int WriteBack_misses[3] = {0};
+    int Writeback_accesses[3] = {0};
+    int Writeback_misses = 0; // l2
 };
 
 struct t_error {
@@ -176,6 +178,7 @@ void yyrestart(FILE *yyin);
     double t_double;
     char * t_str;
 }
+    /* TOKENS PARAMS */			
 %token EQ WS
 %token X86 SYSCLK			
 %token FETCHW DECODEW ISSUEW COMMITW BASE MAXBASE BUFFERS NIQENTRIES NROBENTRIES NINTREGS NFREGS SQENTRIES LQENTRIES RASSIZE
@@ -185,9 +188,13 @@ void yyrestart(FILE *yyin);
 %token IL1SIZE IL1ASSOC I1MSHRS HLIL1 RLIL1 IL1BSIZE
 %token DL1SIZE DL1ASSOC D1MSHRS HLDL1 RLDL1 WBDL1 DL1BSIZE
 %token L2SIZE L2ASSOC L2MSHRS HLL2 RLL2 WBL2 L2BSIZE
-
+    /* TOKENS STATS */
 %token DECODINSTS BRANCHPRED BRANCHERR IEWLOAD IEWSTORE	CINT CFP IPC NCYCLES ICYCLES ROBREADS ROBWRITES	RE_INT_LKUP RE_INT_OP RE_FP_LKUP RE_FP_OP IQ_INT_R IQ_INT_W IQ_INT_WA IQ_FP_QR IQ_FP_QW IQ_FP_QWA INT_RG_R INT_RG_W FP_RG_R FP_RG_W COMCALLS INTDIV INTMULT INT_ALU_ACC FP_ALU_ACC
-			
+%token BTBLKUP BTBUP
+%token DTB_MISS DTB_ACC	ITB_MISS ITB_ACC
+%token D1_ACC D1_MISS D1_WRACC D1_WRBACK D1_WRMISS D1_WRHITS
+%token I1_ACC I1_MISS I1_WRACC I1_WRBACK I1_WRMISS I1_WRHITS
+%token L2_ACC L2_MISS L2_WRACC L2_WRMISS L2_WRBACK L2_WRBMISS	     				
 %token	<t_int> NUM
 %token	<t_double> FLOAT
 %token	<t_str> STR
@@ -282,7 +289,30 @@ stats:		DECODINSTS WS NUM { printf("DECODED INSTRUCTIONS: %d\n",$3); mcpat_stats
 	|	INTDIV WS NUM { printf("INTDIV: %d\n",$3); mcpat_stats->IntDiv *= $3; }
         |	INTMULT WS NUM { printf("INTMULT: %d\n",$3); mcpat_stats->IntMult *= $3; }
 	|	INT_ALU_ACC WS NUM { printf("INT_ALU_ACC: %d\n",$3); mcpat_stats->ialu_accesses = $3; }
-	|	FP_ALU_ACC WS NUM { printf("FP_ALU_ACC: %d\n",$3); mcpat_stats->fpu_accesses = $3; mcpat_stats->cdb_fpu_accesses = $3; }		
+	|	FP_ALU_ACC WS NUM { printf("FP_ALU_ACC: %d\n",$3); mcpat_stats->fpu_accesses = $3; mcpat_stats->cdb_fpu_accesses = $3; }	|	BTBLKUP WS NUM { printf("BTBLKUP: %d\n",$3); mcpat_stats->btb_read_accesses = $3; }
+	|	BTBUP WS NUM { printf("BTBUP: %d\n",$3); mcpat_stats->btb_write_accesses = $3; }
+	|	DTB_MISS WS NUM { printf("DTB_MISS: %d\n",$3); mcpat_stats->dtlb_total_misses = $3; }
+	|	DTB_ACC WS NUM { printf("DTB_ACC: %d\n",$3); mcpat_stats->dtlb_total_accesses = $3; }
+	|	ITB_MISS WS NUM { printf("ITB_MISS: %d\n",$3); mcpat_stats->itlb_total_misses = $3; }
+	|	ITB_ACC WS NUM { printf("ITB_ACC: %d\n",$3); mcpat_stats->itlb_total_accesses = $3; }
+	|	D1_ACC WS NUM { printf("D1_ACC: %d\n",$3); mcpat_stats->overall_access[0] = $3; }
+	|	D1_MISS WS NUM { printf("D1_MISS: %d\n",$3); mcpat_stats->overall_misses[0] = $3; }
+	|	D1_WRACC WS NUM { printf("D1_WRACC: %d\n",$3); mcpat_stats->WriteReq_access[0] = $3; }
+	|	D1_WRMISS WS NUM { printf("D1_WRMISS: %d\n",$3); mcpat_stats->WriteReq_misses[0] = $3; }
+	|	D1_WRHITS WS NUM { printf("D1_WRHITS: %d\n",$3); mcpat_stats->WriteReq_hits[0] = $3; }
+	|	D1_WRBACK WS NUM { printf("D1_WRBACK: %d\n",$3); mcpat_stats->Writeback_accesses[0] = $3; }
+	|	I1_ACC WS NUM { printf("I1_ACC: %d\n",$3); mcpat_stats->overall_access[1] = $3; }
+	|	I1_MISS WS NUM { printf("I1_MISS: %d\n",$3); mcpat_stats->overall_misses[1] = $3; }
+	|	I1_WRACC WS NUM { printf("I1_WRACC: %d\n",$3); mcpat_stats->WriteReq_access[1] = $3; }
+	|	I1_WRMISS WS NUM { printf("I1_WRMISS: %d\n",$3); mcpat_stats->WriteReq_misses[1] = $3; }
+	|	I1_WRHITS WS NUM { printf("I1_WRHITS: %d\n",$3); mcpat_stats->WriteReq_hits[1] = $3; }
+	|	I1_WRBACK WS NUM { printf("I1_WRBACK: %d\n",$3); mcpat_stats->Writeback_accesses[1] = $3; }
+	|	L2_ACC WS NUM { printf("L2_ACC: %d\n",$3); mcpat_stats->overall_access[2] = $3; }
+	|	L2_MISS WS NUM { printf("L2_MISS: %d\n",$3); mcpat_stats->overall_misses[2] = $3; }
+	|	L2_WRACC WS NUM { printf("L2_WRACC: %d\n",$3); mcpat_stats->WriteReq_access[2] = $3; }
+	|	L2_WRMISS WS NUM { printf("L2_WRMISS: %d\n",$3); mcpat_stats->WriteReq_misses[2] = $3; }
+	|	L2_WRBACK WS NUM { printf("L2_WRBACK: %d\n",$3); mcpat_stats->Writeback_accesses[2] = $3; }
+	|	L2_WRBMISS WS NUM { printf("L2_WRBMISS: %d\n",$3); mcpat_stats->Writeback_misses = $3; }		
 	;
 
 %%

@@ -727,9 +727,22 @@ I1                  "system.cpu.icache."
     return L2_WRACC;
 }
 
+<INITIAL>{SL2}"WriteReq_misses::total" {
+    BEGIN(DELIM);
+    return L2_WRMISS;
+}
 
+<INITIAL>{SL2}"Writeback_accesses::total" {
+    BEGIN(DELIM);
+    return L2_WRBACK;
+}
 
-    /* OBTAINING VALUES DESIRED */
+<INITIAL>{SL2}"Writeback_misses::total" {
+    BEGIN(DELIM);
+    return L2_WRBMISS;
+}
+
+   /* OBTAINING VALUES DESIRED */
 
 <VALUE>{eq} {
         return EQ;
