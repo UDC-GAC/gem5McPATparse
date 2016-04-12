@@ -777,7 +777,7 @@ I1                  "system.cpu.icache."
 
     /* WHEN NOTHING ELSE MATCHES */
 <*>{ignore}|{eq}|"\n"|" "           { /* DO NOTHING */ }
-<*>.                                { printf("error: %s\n", yytext); }
+<*>.                                {  }
 %%
 
 /** Some comments:

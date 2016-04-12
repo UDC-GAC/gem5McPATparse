@@ -25,6 +25,7 @@ using namespace std;
 #endif
 
 #define MAX_NUM 1000
+#define MAX_LINE 1000
 
 extern FILE *yyin;
 extern int yylineno;
@@ -159,11 +160,13 @@ struct t_mcpat_stats {
 };
 
 struct t_error {
-    int n_stat;
-    int err_stat[MAX_NUM];
+    int n_stat = 0;
+    int stat_l[MAX_NUM] = {0};
+    char *stat[MAX_NUM];
 
-    int n_config;
-    int err_config[MAX_NUM];
+    int n_config = 0;
+    int config_l[MAX_NUM] = {0};
+    char *config[MAX_NUM];
 };
 
 struct t_mcpat_params *mcpat_param;
@@ -180,7 +183,7 @@ void yyrestart(FILE *yyin);
     char * t_str;
 }
     /* TOKENS PARAMS */			
-%token EQ WS
+%token EQ WS NL
 %token X86 SYSCLK			
 %token FETCHW DECODEW ISSUEW COMMITW BASE MAXBASE BUFFERS NIQENTRIES NROBENTRIES NINTREGS NFREGS SQENTRIES LQENTRIES RASSIZE
 %token LHISTB LCTRB LPREDSIZE GPREDSIZE GCTRB CPREDSIZE	CCTRB
@@ -209,6 +212,7 @@ S : line { printf("finished parsing!\n\n"); }
 line : /* empty */ 
 	|	line config
 	|	line stats
+	|	line error { /* do nothing */ }
 ;
 
 config:
@@ -258,7 +262,6 @@ config:
 	|	WBL2 EQ NUM { printf("WBL2=%d\n", $3); mcpat_param->L2_buffer_sizes[3] = $3; }
 	|	HLL2 EQ NUM { printf("HLL2=%d\n", $3); mcpat_param->l2hit_lat = $3; }		
 	|	RLL2 EQ NUM { printf("RLL2=%d\n", $3); mcpat_param->l2resp_lat = $3; }		
-	|	error { printf("error you\n"); }
 		
 stats:		DECODINSTS WS NUM { printf("DECODED INSTRUCTIONS: %d\n",$3); mcpat_stats->total_instructions = $3; }
 	|	BRANCHPRED WS NUM { printf("BRANCH: %d\n",$3); mcpat_stats->branch_instructions = $3; }
@@ -462,15 +465,52 @@ static int handle_options(int argc, char **argv)
 
 void init_structs()
 {
+    int i;
     mcpat_param = (struct t_mcpat_params *) malloc(sizeof(struct t_mcpat_params));
     mcpat_stats = (struct t_mcpat_stats *) malloc(sizeof(struct t_mcpat_stats));
 
     error_list = (struct t_error *) malloc(sizeof(struct t_error));
+    for (i=0; i < MAX_NUM; i++) {
+	error_list->stat[i] = (char *) malloc(MAX_LINE*sizeof(char));
+    }
+    for (i=0; i < MAX_NUM; i++) {
+	error_list->config[i] = (char *) malloc(MAX_LINE*sizeof(char));
+    }
+}
+
+/* function to report errors */
+void yyerror(const char *s, ...)
+{
+    printf("%d: error: %s\n", yylineno, s);
+    if (yyin == config_fptr) {
+	error_list->config[error_list->n_config] = strdup(s);
+	error_list->config_l[error_list->n_config++] = yylineno;
+        
+    } else if (yyin == stats_fptr) {
+	error_list->stat[error_list->n_stat] = strdup(s);
+	error_list->stat_l[error_list->n_stat++] = yylineno;
+    }
 }
 
 void display_errors()
 {
+    int i;
 
+    if ((error_list->n_config == 0)&&
+	(error_list->n_stat == 0)) {
+	printf("Parsing was successful!\n");
+	return;
+    } 
+
+    printf("Errors in config.ini: %d\n", error_list->n_config);
+    for(i=0; i < error_list->n_config; i++) {
+	printf("%d: %s\n", error_list->config_l[i], error_list->config[i]);
+    }
+
+    printf("Errors in stats: %d\n", error_list->n_stat);
+    for(i=0; i < error_list->n_stat; i++) {
+	printf("%d: %s\n", error_list->stat_l[i], error_list->stat[i]);
+    }
 }
 
 /////////////////////////////////
@@ -509,13 +549,7 @@ int main(int argc, char *argv[])
     // fill template.xml
     //fill_xml();
 
-    // display_errors();
+    display_errors();
     
     exit(0);
-}
-
-/* function to report errors */
-void yyerror(const char *s, ...)
-{
-    printf("%d: error: %s\n", yylineno, s);
 }
