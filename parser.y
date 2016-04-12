@@ -10,6 +10,7 @@
 #include <fstream>
 #include <vector>
 #include <math.h>
+#include "isa.h"
 #include "lib/rapidxml.hpp"
 
 using namespace rapidxml;
@@ -54,7 +55,7 @@ struct t_mcpat_params {
     int base_stages = 0;
     int nmax_base = 0;
     int max_base = 0;
-    int pipeline_depth[2];
+    int pipeline_depth[2] = {INT_EXE, FP_EXE};
     /* branch predictor */
     int load_predictor[3] = {0};
     int global_predictor[2];
@@ -84,70 +85,70 @@ struct t_mcpat_params {
     int l2resp_lat;
 
     /* ALUs latencies */
-    int lat_IntDiv; //TODO
-    int lat_IntMult; //TODO
+    int lat_IntDiv = 20; //TODO
+    int lat_IntMult = 3; //TODO
 };
 
 struct t_mcpat_stats {
     /* core statistics */
-    int total_instructions;
-    int branch_instructions;
-    int branch_mispredictions;
-    int load_instructions;
-    int store_instructions;
-    int committed_int_instructions;
-    int committed_fp_instructions;
-    double pipeline_duty_cycle;
-    int total_cycles;
-    int idle_cycles;
-    int busy_cycles;
-    int ROB_reads;
-    int ROB_writes;
-    int rename_reads;
-    int rename_writes;
-    int fp_rename_reads;
-    int fp_rename_writes;
-    int inst_window_reads;
-    int inst_window_writes;
-    int inst_window_wakeup_accesses;
+    int total_instructions = 0;
+    int branch_instructions = 0;
+    int branch_mispredictions = 0;
+    int load_instructions = 0;
+    int store_instructions = 0;
+    int committed_int_instructions = 0;
+    int committed_fp_instructions = 0;
+    double pipeline_duty_cycle = 0.0;
+    int total_cycles = 0;
+    int idle_cycles = 0;
+    int busy_cycles = 0;
+    int ROB_reads = 0;
+    int ROB_writes = 0;
+    int rename_reads = 0;
+    int rename_writes = 0;
+    int fp_rename_reads = 0;
+    int fp_rename_writes = 0;
+    int inst_window_reads = 0;
+    int inst_window_writes = 0;
+    int inst_window_wakeup_accesses = 0;
 
-    int fp_inst_window_reads;
-    int fp_inst_window_writes;
-    int fp_inst_window_wakeup_accesses;
-    int int_regfile_reads;
-    int int_regfile_writes;
-    int float_regfile_reads;
-    int float_regfile_writes;
-    int function_calls;
+    int fp_inst_window_reads = 0;
+    int fp_inst_window_writes = 0;
+    int fp_inst_window_wakeup_accesses = 0;
+    int int_regfile_reads = 0;
+    int int_regfile_writes = 0;
+    int float_regfile_reads = 0;
+    int float_regfile_writes = 0;
+    int function_calls = 0;
     /* formulas */
-    int ialu_accesses;
-    int fpu_accesses;
-    int mul_accesses;
-    int cdb_alu_accesses;
-    int cdb_mul_accesses;
-    int cdb_fpu_accesses;
+    int ialu_accesses = 0;
+    int fpu_accesses = 0;
+    int mul_accesses = 0;
+    int cdb_alu_accesses = 0;
+    int cdb_mul_accesses = 0;
+    int cdb_fpu_accesses = 0;
     /* btb stats */
-    int btb_read_accesses;
-    int btb_write_accesses;
+    int btb_read_accesses = 0;
+    int btb_write_accesses = 0;
     /* tlb L1 */
-    int dtlb_total_accesses;
-    int dtlb_total_misses;
-    int itlb_total_accesses;
-    int itlb_total_misses;
+    int dtlb_total_accesses = 0;
+    int dtlb_total_misses = 0;
+    int itlb_total_accesses = 0;
+    int itlb_total_misses = 0;
     /* l1 cache */
-    int l1_read_accesses;
-    int l1_write_accesses;
-    int l1_read_misses;
-    int l1_write_misses;
+    int l1_read_accesses = 0;
+    int l1_write_accesses = 0;
+    int l1_read_misses = 0;
+    int l1_write_misses = 0;
     /* l2 cache */
-    int l2_read_accesses;
-    int l2_write_accesses;
-    int l2_read_misses;
-    int l2_write_misses;
+    int l2_read_accesses = 0;
+    int l2_write_accesses = 0;
+    int l2_read_misses = 0;
+    int l2_write_misses = 0;
 
     /* aux: default values */
-    int IntDiv = 20; //todo
-    int IntMult = 3; //todo
+    int IntDiv = 0; //todo
+    int IntMult = 0; //todo
     int overall_access[3] = {0};
     int overall_misses[3] = {0};
     int WriteReq_access[3] = {0};
@@ -277,7 +278,7 @@ stats:		DECODINSTS WS NUM { printf("DECODED INSTRUCTIONS: %d\n",$3); mcpat_stats
 	|	RE_FP_OP WS NUM { printf("RE_FP_OP: %d\n",$3); mcpat_stats->fp_rename_writes = $3; }
 	|	IQ_INT_R WS NUM { printf("IQ_INT_R: %d\n",$3); mcpat_stats->inst_window_reads = $3; }
 	|	IQ_INT_W WS NUM { printf("IQ_INT_W: %d\n",$3); mcpat_stats->inst_window_writes = $3; }
-	|	IQ_INT_WA WS NUM { printf("IQ_INT_WA: %d\n",$3); mcpat_stats->inst_window_wakeup_accesses = $3; }				|	IQ_FP_QR WS NUM { printf("IQ_FP_QR: %d\n",$3); mcpat_stats->fp_inst_window_reads = $3; }
+	|	IQ_INT_WA WS NUM { printf("IQ_INT_WA: %d\n",$3); mcpat_stats->inst_window_wakeup_accesses = $3; }		               |       IQ_FP_QR WS NUM { printf("IQ_FP_QR: %d\n",$3); mcpat_stats->fp_inst_window_reads = $3; }
 	|	IQ_FP_QW WS NUM { printf("IQ_FP_QW: %d\n",$3); mcpat_stats->fp_inst_window_writes = $3; }
 	|	IQ_FP_QWA WS NUM { printf("IQ_FP_QWA: %d\n",$3); mcpat_stats->fp_inst_window_wakeup_accesses = $3; }
 	|	INT_RG_R WS NUM { printf("INT_RG_R: %d\n",$3); mcpat_stats->int_regfile_reads = $3; }
@@ -288,7 +289,7 @@ stats:		DECODINSTS WS NUM { printf("DECODED INSTRUCTIONS: %d\n",$3); mcpat_stats
 	|	INTDIV WS NUM { printf("INTDIV: %d\n",$3); mcpat_stats->IntDiv *= $3; }
         |	INTMULT WS NUM { printf("INTMULT: %d\n",$3); mcpat_stats->IntMult *= $3; }
 	|	INT_ALU_ACC WS NUM { printf("INT_ALU_ACC: %d\n",$3); mcpat_stats->ialu_accesses = $3; }
-	|	FP_ALU_ACC WS NUM { printf("FP_ALU_ACC: %d\n",$3); mcpat_stats->fpu_accesses = $3; mcpat_stats->cdb_fpu_accesses = $3; }       |	BTBLKUP WS NUM { printf("BTBLKUP: %d\n",$3); mcpat_stats->btb_read_accesses = $3; }
+	|	FP_ALU_ACC WS NUM { printf("FP_ALU_ACC: %d\n",$3); mcpat_stats->fpu_accesses = $3; mcpat_stats->cdb_fpu_accesses = $3; }       |       BTBLKUP WS NUM { printf("BTBLKUP: %d\n",$3); mcpat_stats->btb_read_accesses = $3; }
 	|	BTBUP WS NUM { printf("BTBUP: %d\n",$3); mcpat_stats->btb_write_accesses = $3; }
 	|	DTB_MISS WS NUM { printf("DTB_MISS: %d\n",$3); mcpat_stats->dtlb_total_misses = $3; }
 	|	DTB_ACC WS NUM { printf("DTB_ACC: %d\n",$3); mcpat_stats->dtlb_total_accesses = $3; }
