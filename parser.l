@@ -776,8 +776,7 @@ I1                  "system.cpu.icache."
 }
 
     /* WHEN NOTHING ELSE MATCHES */
-<*>{ignore}|{eq}|"\n"|" "           { /* DO NOTHING */ }
-<*>.                                {  }
+<*>{ignore}|{eq}|"\n"|" "|.           { /* DO NOTHING */ }
 %%
 
 /** Some comments:
