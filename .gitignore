@@ -5,3 +5,4 @@
 *.yy.*
 *#*
 gem5ToMcPAT
+out.xml
