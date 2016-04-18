@@ -53,7 +53,7 @@ void yyrestart(FILE *yyin);
     char * t_str;
 }
     /* TOKENS PARAMS */			
-%token EQ WS NL
+%token EQ WS NL BADTKN
 %token X86 SYSCLK M_MODE			
 %token FETCHW DECODEW ISSUEW COMMITW BASE MAXBASE BUFFERS NIQENTRIES NROBENTRIES NINTREGS NFREGS SQENTRIES LQENTRIES RASSIZE
 %token LHISTB LCTRB LPREDSIZE GPREDSIZE GCTRB CPREDSIZE	CCTRB
@@ -62,6 +62,7 @@ void yyrestart(FILE *yyin);
 %token IL1SIZE IL1ASSOC I1MSHRS HLIL1 RLIL1 IL1BSIZE
 %token DL1SIZE DL1ASSOC D1MSHRS HLDL1 RLDL1 WBDL1 DL1BSIZE
 %token L2SIZE L2ASSOC L2MSHRS HLL2 RLL2 WBL2 L2BSIZE
+%token MULTALU_LAT DIVALU_LAT			
     /* TOKENS STATS */
 %token DECODINSTS BRANCHPRED BRANCHERR IEWLOAD IEWSTORE	CINT CFP IPC NCYCLES ICYCLES ROBREADS ROBWRITES	RE_INT_LKUP RE_INT_OP RE_FP_LKUP RE_FP_OP IQ_INT_R IQ_INT_W IQ_INT_WA IQ_FP_QR IQ_FP_QW IQ_FP_QWA INT_RG_R INT_RG_W FP_RG_R FP_RG_W COMCALLS INTDIV INTMULT INT_ALU_ACC FP_ALU_ACC
 %token BTBLKUP BTBUP
@@ -76,7 +77,7 @@ void yyrestart(FILE *yyin);
 %start S 			
 %%
 // rules
-S : line { printf("finished parsing!\n"); }
+S : line { /* finish */ }
   ;
 
 /* left recursion better than right recursion: due to stack reasons */
@@ -168,6 +169,8 @@ config:
 	|	WBL2 EQ NUM { mcpat_param->L2_buffer_sizes[3] = $3; }
 	|	HLL2 EQ NUM { mcpat_param->l2hit_lat = $3; }		
 	|	RLL2 EQ NUM { mcpat_param->l2resp_lat = $3; }		
+	|	MULTALU_LAT EQ NUM { mcpat_param->lat_IntMult = $3; }
+	|	DIVALU_LAT EQ NUM { mcpat_param->lat_IntDiv = $3; }
 		
 stats:		DECODINSTS WS NUM { mcpat_stats->total_instructions = $3; }
 	|	BRANCHPRED WS NUM { mcpat_stats->branch_instructions = $3; }
@@ -196,12 +199,10 @@ stats:		DECODINSTS WS NUM { mcpat_stats->total_instructions = $3; }
 	|	FP_RG_R WS NUM { mcpat_stats->float_regfile_reads = $3; }
 	|	FP_RG_W WS NUM { mcpat_stats->float_regfile_writes = $3; }
 	|	COMCALLS WS NUM { mcpat_stats->function_calls = $3; }
-	|	INTDIV WS NUM { mcpat_stats->IntDiv *= $3; }
-        |	INTMULT WS NUM { mcpat_stats->IntMult *= $3; }
+	|	INTDIV WS NUM { mcpat_stats->IntDiv = $3; }
+        |	INTMULT WS NUM { mcpat_stats->IntMult = $3; }
 	|	INT_ALU_ACC WS NUM { mcpat_stats->ialu_accesses = $3; }
-	|	FP_ALU_ACC WS NUM {
-	                 mcpat_stats->fpu_accesses = $3;
-			 mcpat_stats->cdb_fpu_accesses = $3; }
+	|	FP_ALU_ACC WS NUM { mcpat_stats->fpu_accesses = $3;}
 	|       BTBLKUP WS NUM { mcpat_stats->btb_read_accesses = $3; }
 	|	BTBUP WS NUM { mcpat_stats->btb_write_accesses = $3; }
 	|	DTB_MISS WS NUM { mcpat_stats->dtlb_total_misses = $3; }
@@ -232,7 +233,7 @@ stats:		DECODINSTS WS NUM { mcpat_stats->total_instructions = $3; }
 
 /* finds a concrete tag given the name of the tag (type) the value of
    the attribute name and then sets its value to value */
-void findAndSetValue(xml_node<> *parent, char *type, char *name_value, char *value)
+void findAndSetValue(xml_node<> *parent, char const *type, char const *name_value, char *value)
 {
     int found = 0;
     for (xml_node<> *node = parent->first_node(type); node; node = node->next_sibling()) {
@@ -253,6 +254,7 @@ void findAndSetValue(xml_node<> *parent, char *type, char *name_value, char *val
     	    found = 1;
     	}
     }
+    
     if (!found) {
 	// we could make a set of warnings in order to tell the user
 	// that a requested param/stat has not been set
@@ -260,26 +262,43 @@ void findAndSetValue(xml_node<> *parent, char *type, char *name_value, char *val
     }
 }
 
-void findAndSetIntValue(xml_node<> *parent, char *type, char *name_value, int value)
+void findAndSetIntValue(xml_node<> *parent, char const *type, char const *name_value, int value)
 {
     char str[80];
     snprintf(str, 80, "%d", value);
+    if (value<=0) {
+	cout << BLD YEL "Warning: '" << name_value << "' may have not been set!" RES << endl;
+    }
     findAndSetValue(parent, type, name_value, str);
+    
 }
 
-void findAndSetFloatValue(xml_node<> *parent, char *type, char *name_value, double value)
+void findAndSetFloatValue(xml_node<> *parent, char const *type, char const *name_value, double value)
 {
     char str[80];
     snprintf(str, 80, "%f", value);
+    if (value <= 0.0) {
+	cout << BLD YEL "Warning: '" << name_value << "' may have not been set!" RES << endl;
+    }
     findAndSetValue(parent, type, name_value, str);
+}
+
+void checkNode(xml_node<> *node, char const *id, char const *value)
+{
+    char const *error_msg = "Error in template structure! Quitting";
+    if ((node == 0)||
+	(strcmp(node->first_attribute("id")->value(), id))&&
+	(strcmp(node->first_attribute("name")->value(), value))) {
+	cout << error_msg << "Component " << id << " missing" << endl;
+	unlink("out.xml");
+	exit(-1);
+    }	
 }
 
 /* xmlParser fills with the correct values the templates and prints in
    out.xml */
 void xmlParser() throw()
 {
-    char *error_msg = "Error in template structure! Quitting";
-    
     cout << "Parsing template..." << endl;
     // Read the xml file into a vector
     ifstream theTemplate ("out.xml");
@@ -289,26 +308,12 @@ void xmlParser() throw()
     doc.parse<0>(&buffer[0]);
     
     // Find our root node
-    xml_node<> *root_node;
-    root_node = doc.first_node("component");
-    if ((root_node == 0)||
-	(strcmp(root_node->first_attribute("id")->value(), "root"))&&
-	(strcmp(root_node->first_attribute("name")->value(), "root"))) {
-	cout << error_msg << "Component root missing" << endl;
-	unlink("out.xml");
-	exit(-1);
-    }
+    xml_node<> *root_node = doc.first_node("component");
+    checkNode(root_node, "root", "root");
     
     // system node
-    xml_node<> * sys_node;
-    sys_node = root_node->first_node("component");
-    if ((sys_node == 0)||
-	(strcmp(sys_node->first_attribute("id")->value(), "system"))&&
-	(strcmp(sys_node->first_attribute("name")->value(), "system"))) {
-	cout << error_msg << "Component system missing" <<endl;
-	unlink("out.xml");
-	exit(-1);
-    }
+    xml_node<> *sys_node = root_node->first_node("component");
+    checkNode(sys_node, "system", "system");
     
     /* SYSTEM PARAMS AND STATS */
     findAndSetIntValue(sys_node, "param", "target_core_clockrate", mcpat_param->clock_rate);
@@ -317,7 +322,72 @@ void xmlParser() throw()
     findAndSetIntValue(sys_node, "stat", "busy_cycles", mcpat_stats->total_cycles - mcpat_stats->idle_cycles);
 
     /* CORE PARAMS AND STATS */
+    xml_node<> *core_node = sys_node->first_node("component");
+    checkNode(core_node, "system.core0", "core0");
+    findAndSetIntValue(core_node, "param", "clock_rate", mcpat_param->clock_rate);
+    findAndSetIntValue(core_node, "param", "x86", mcpat_param->isa_x86);
+    findAndSetIntValue(core_node, "param", "fetch_width", mcpat_param->fetch_width);
+    findAndSetIntValue(core_node, "param", "decode_width", mcpat_param->decode_width);
+    findAndSetIntValue(core_node, "param", "issue_width", mcpat_param->issue_width);
+    findAndSetIntValue(core_node, "param", "peak_issue_width", mcpat_param->peak_issue_width);
+    findAndSetIntValue(core_node, "param", "commit_width", mcpat_param->commit_width);
+    if ((mcpat_param->nbase!=4)||(mcpat_param->nmax_base!=4))
+	cout << BLD YEL "Warning: some parameters missing to set properly 'pipeline_depth'!" RES << endl;
+    findAndSetValue(core_node, "param", "pipeline_depth", make_tuple((INT_EXE +
+									mcpat_param->base_stages +
+								        mcpat_param->max_base),
+								        (FP_EXE +
+									mcpat_param->base_stages +
+								        mcpat_param->max_base)));
+    findAndSetIntValue(core_node, "param", "instruction_buffer_size", mcpat_param->instruction_buffer_size);
+    findAndSetIntValue(core_node, "param", "instruction_window_size", mcpat_param->instruction_window_size);
+    findAndSetIntValue(core_node, "param", "fp_instruction_window_size", mcpat_param->fp_instruction_window_size);
+    findAndSetIntValue(core_node, "param", "ROB_size", mcpat_param->ROB_size);
+    findAndSetIntValue(core_node, "param", "phy_Regs_IRF_size", mcpat_param->phy_Regs_IRF_size);
+    findAndSetIntValue(core_node, "param", "phy_Regs_FRF_size", mcpat_param->phy_Regs_FRF_size);
+    findAndSetIntValue(core_node, "param", "store_buffer_size", mcpat_param->store_buffer_size);
+    findAndSetIntValue(core_node, "param", "load_buffer_size", mcpat_param->load_buffer_size);
+    findAndSetIntValue(core_node, "param", "RAS_size", mcpat_param->RAS_size);
 
+    findAndSetIntValue(core_node, "stat", "total_instructions", mcpat_stats->total_instructions);
+    findAndSetIntValue(core_node, "stat", "branch_instructions", mcpat_stats->branch_instructions);
+    findAndSetIntValue(core_node, "stat", "branch_mispredictions", mcpat_stats->branch_mispredictions);
+    findAndSetIntValue(core_node, "stat", "load_instructions", mcpat_stats->load_instructions);
+    findAndSetIntValue(core_node, "stat", "store_instructions", mcpat_stats->store_instructions - mcpat_stats->load_instructions);
+    findAndSetIntValue(core_node, "stat", "committed_int_instructions", mcpat_stats->committed_int_instructions);
+    findAndSetIntValue(core_node, "stat", "committed_fp_instructions", mcpat_stats->committed_fp_instructions);
+    findAndSetFloatValue(core_node, "stat", "pipeline_duty_cycle", mcpat_stats->pipeline_duty_cycle);
+    findAndSetIntValue(core_node, "stat", "total_cycles", mcpat_stats->total_cycles);
+    findAndSetIntValue(core_node, "stat", "idle_cycles", mcpat_stats->idle_cycles);
+    findAndSetIntValue(core_node, "stat", "busy_cycles", mcpat_stats->total_cycles - mcpat_stats->idle_cycles);
+    findAndSetIntValue(core_node, "stat", "ROB_reads", mcpat_stats->ROB_reads);
+    findAndSetIntValue(core_node, "stat", "ROB_writes", mcpat_stats->ROB_writes);
+    findAndSetIntValue(core_node, "stat", "rename_reads", mcpat_stats->rename_reads);
+    findAndSetIntValue(core_node, "stat", "rename_writes", mcpat_stats->rename_writes);
+    findAndSetIntValue(core_node, "stat", "fp_rename_reads", mcpat_stats->fp_rename_reads);
+    findAndSetIntValue(core_node, "stat", "fp_rename_writes", mcpat_stats->fp_rename_writes);
+    findAndSetIntValue(core_node, "stat", "inst_window_reads", mcpat_stats->inst_window_reads);
+    findAndSetIntValue(core_node, "stat", "inst_window_writes", mcpat_stats->inst_window_writes);
+    findAndSetIntValue(core_node, "stat", "inst_window_wakeup_accesses", mcpat_stats->inst_window_wakeup_accesses);
+    findAndSetIntValue(core_node, "stat", "fp_inst_window_reads", mcpat_stats->fp_inst_window_reads);
+    findAndSetIntValue(core_node, "stat", "fp_inst_window_writes", mcpat_stats->fp_inst_window_writes);
+    findAndSetIntValue(core_node, "stat", "fp_inst_window_wakeup_accesses", mcpat_stats->fp_inst_window_wakeup_accesses);
+    findAndSetIntValue(core_node, "stat", "int_regfile_reads", mcpat_stats->int_regfile_reads);
+    findAndSetIntValue(core_node, "stat", "int_regfile_writes", mcpat_stats->int_regfile_writes);
+    findAndSetIntValue(core_node, "stat", "float_regfile_reads", mcpat_stats->float_regfile_reads);
+    findAndSetIntValue(core_node, "stat", "function_calls", mcpat_stats->function_calls);
+    mcpat_stats->mul_accesses = mcpat_stats->IntDiv*mcpat_param->lat_IntDiv +
+	                        mcpat_stats->IntMult*mcpat_param->lat_IntMult;
+    mcpat_stats->ialu_accesses -= mcpat_stats->mul_accesses;
+    findAndSetIntValue(core_node, "stat", "ialu_accesses", mcpat_stats->ialu_accesses);
+    findAndSetIntValue(core_node, "stat", "fpu_accesses", mcpat_stats->fpu_accesses);
+    findAndSetIntValue(core_node, "stat", "mul_accesses", mcpat_stats->mul_accesses);
+    // this is not the same as the Appendix says, but in some
+    // templates the same values are used
+    findAndSetIntValue(core_node, "stat", "cdb_alu_accesses", mcpat_stats->ialu_accesses);
+    findAndSetIntValue(core_node, "stat", "cdb_mul_accesses", mcpat_stats->mul_accesses);    
+    findAndSetIntValue(core_node, "stat", "cdb_fpu_accesses", mcpat_stats->fpu_accesses);    
+    
     /* CACHES */
 
     // finishing message
@@ -413,15 +483,15 @@ int main(int argc, char *argv[])
     
     // parse config.ini
     yyin = config_fptr;
-    printf("[config.ini]: ");
     yyparse();
+    printf("[config.ini]: finished parsing!\n");
     fclose(yyin);
     
     // to clean yyin
     yyrestart(yyin);
     yyin = stats_fptr;
-    printf("[stats.txt]: ");
     yyparse();
+    printf("[stats.txt]: finished parsing!\n");
     fclose(yyin);
 
     // in case the simulation is not detailed
