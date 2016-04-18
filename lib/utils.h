@@ -106,7 +106,6 @@ struct t_mcpat_stats {
     double pipeline_duty_cycle = 0.0;
     int total_cycles = 0;
     int idle_cycles = 0;
-    int busy_cycles = 0;
     int ROB_reads = 0;
     int ROB_writes = 0;
     int rename_reads = 0;
@@ -172,3 +171,9 @@ struct t_error {
     int config_l[MAX_NUM] = {0};
     char *config[MAX_NUM];
 };
+
+FILE *config_fptr, *stats_fptr;
+
+// declaration
+void usage(int i);
+int handle_options(int argc, char **argv);
