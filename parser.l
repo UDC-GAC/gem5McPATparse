@@ -9,6 +9,8 @@ int PREV_STATE = -1;
 %x CLK			
 %x ISA
 
+%x LATENCY
+			
 %x DTLB
 %x ITLB
 
@@ -570,6 +572,20 @@ I1                  "system.cpu.icache."
     return FP_ALU_ACC;
 }
 
+<INITIAL>"opClass=IntMult" {
+    BEGIN(LATENCY);
+    return MULTALU_LAT;
+}
+
+<INITIAL>"opClass=IntDiv" {
+    BEGIN(LATENCY);
+    return DIVALU_LAT;
+}
+
+<LATENCY>"opLat" {
+    BEGIN(VALUE);
+}
+
     /* BTB */
 <INITIAL>{CPU}"branchPred.BTBLookups" {
     BEGIN(DELIM);
@@ -740,6 +756,16 @@ I1                  "system.cpu.icache."
 }
 
     /* WHEN NOTHING ELSE MATCHES */
+<VALUE>{ignore}|{eq}|{ws}|"\n"|. {
+    if (PREV_STATE!=-1) {
+       BEGIN(PREV_STATE);
+       PREV_STATE = -1;
+    } else {
+       BEGIN(INITIAL);
+    }
+    return BADTKN;
+}
+
 <*>{ignore}|{eq}|{ws}|"\n"|.           { /* DO NOTHING */ }
 %%
 
