@@ -266,8 +266,9 @@ void findAndSetIntValue(xml_node<> *parent, char const *type, char const *name_v
 {
     char str[80];
     snprintf(str, 80, "%d", value);
-    if (value<=0) {
-	cout << BLD YEL "Warning: '" << name_value << "' may have not been set!" RES << endl;
+    if (value <= 0) {
+	cout << BLD YEL "Warning: " << type <<" " << parent->first_attribute("id")->value()
+	     <<" '" << name_value << "' may have not been set!" RES << endl;
     }
     findAndSetValue(parent, type, name_value, str);
     
@@ -278,7 +279,8 @@ void findAndSetFloatValue(xml_node<> *parent, char const *type, char const *name
     char str[80];
     snprintf(str, 80, "%f", value);
     if (value <= 0.0) {
-	cout << BLD YEL "Warning: '" << name_value << "' may have not been set!" RES << endl;
+	cout << BLD YEL "Warning: " << type <<" " << parent->first_attribute("id")->value()
+	     <<" '" << name_value << "' may have not been set!" RES << endl;
     }
     findAndSetValue(parent, type, name_value, str);
 }
@@ -398,6 +400,9 @@ void xmlParser() throw()
     /* ITLB */
     xml_node<> *itlb_node = bp_node->next_sibling();
     checkNode(itlb_node, "system.core0.itlb", "itlb");
+    findAndSetIntValue(itlb_node, "param", "number_entries", mcpat_param->number_entries_itlb);
+    findAndSetIntValue(itlb_node, "stat", "total_accesses", mcpat_stats->itlb_total_accesses);
+    findAndSetIntValue(itlb_node, "stat", "total_misses", mcpat_stats->itlb_total_misses);
     
     /* ICACHE */
     xml_node<> *icache_node = itlb_node->next_sibling();
@@ -406,6 +411,9 @@ void xmlParser() throw()
     /* DTLB */
     xml_node<> *dtlb_node = icache_node->next_sibling();
     checkNode(dtlb_node, "system.core0.dtlb", "dtlb");
+    findAndSetIntValue(dtlb_node, "param", "number_entries", mcpat_param->number_entries_dtlb);
+    findAndSetIntValue(dtlb_node, "stat", "total_accesses", mcpat_stats->dtlb_total_accesses);
+    findAndSetIntValue(dtlb_node, "stat", "total_misses", mcpat_stats->dtlb_total_misses);
     
     /* DCACHE */
     xml_node<> *dcache_node = dtlb_node->next_sibling();

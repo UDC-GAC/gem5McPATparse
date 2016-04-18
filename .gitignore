@@ -6,3 +6,5 @@
 *#*
 gem5ToMcPAT
 out.xml
+config.ini
+gem5out.txt
