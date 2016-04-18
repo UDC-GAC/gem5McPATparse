@@ -6,7 +6,7 @@ OUTPUT=out.xml
 CONF=config.ini
 STATS=gem5out.txt
 BIN=gem5ToMcPAT
-FLAGS=-lfl -ly -w
+FLAGS=-lfl -ly -std=c++11
 PARS=parser
 
 all: compile
@@ -20,4 +20,4 @@ run:
 	./$(BIN) -x $(XMLTEMPLATE) -c $(CONF) -s $(STATS) -o $(OUTPUT)
 
 clean:
-	rm *.yy.c *.tab.c *.out *.tab.h stack.hh
+	rm *.yy.c *.tab.c *.out *.tab.h stack.hh $(OUTPUT) $(BIN)
