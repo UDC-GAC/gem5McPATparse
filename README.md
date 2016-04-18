@@ -25,6 +25,14 @@ It has been tested in a Linux distribution with `gcc version 5.2.1`, `bison vers
 
 The template has been adapted for the [last version](https://code.google.com/archive/p/mcpat/downloads) of [McPAT 1.0]. The gem5 version tested is from [03/2015](https://github.com/gem5/gem5/commit/8909843a76c723cb9d8a0b1394eeeba4d7abadb1), but it should work for a more recent version.
 
+# TODO list
+
+What can be done or improved:
+
+* Parse `system.mc` params and statistics
+* Code clarity
+* Portability [?]
+
 # Limitations
 This first version is focused on the compatibility of the output of memory system and core in gem5 with the input of McPAT. Thus, other components such as PCIe will be ignored by the moment.
 
