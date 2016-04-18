@@ -11,10 +11,15 @@
 #include <vector>
 #include <math.h>
 #include "isa.h"
+#include "lib/copy.h"
 #include "lib/rapidxml.hpp"
 
 using namespace rapidxml;
 using namespace std;
+
+#ifndef VERSION
+#define VERSION "0.0.9"
+#endif
 
 #ifndef xml_temp
 #define xml_temp "template.xml"
@@ -26,6 +31,8 @@ using namespace std;
 
 #define MAX_NUM 1000
 #define MAX_LINE 1000
+
+int ERROR = 0;
 
 extern FILE *yyin;
 extern int yylineno;
@@ -184,7 +191,7 @@ void yyrestart(FILE *yyin);
 }
     /* TOKENS PARAMS */			
 %token EQ WS NL
-%token X86 SYSCLK			
+%token X86 SYSCLK MEM_MODE			
 %token FETCHW DECODEW ISSUEW COMMITW BASE MAXBASE BUFFERS NIQENTRIES NROBENTRIES NINTREGS NFREGS SQENTRIES LQENTRIES RASSIZE
 %token LHISTB LCTRB LPREDSIZE GPREDSIZE GCTRB CPREDSIZE	CCTRB
 %token BTBE
@@ -199,8 +206,9 @@ void yyrestart(FILE *yyin);
 %token D1_ACC D1_MISS D1_WRACC D1_WRBACK D1_WRMISS D1_WRHITS
 %token I1_ACC I1_MISS I1_WRACC I1_WRBACK I1_WRMISS I1_WRHITS
 %token L2_ACC L2_MISS L2_WRACC L2_WRMISS L2_WRBACK L2_WRBMISS	     				
-%token	<t_int> NUM
-%token	<t_double> FLOAT
+%token <t_int> NUM
+%token <t_double> FLOAT
+%token <t_str> STR
 // tokens types etc
 %start S 			
 %%
@@ -216,141 +224,183 @@ line : /* empty */
 ;
 
 config:
-                X86 { mcpat_param->isa_x86 = 1; }       
-        |	SYSCLK EQ NUM { printf("clk=%d\n",$3); mcpat_param->clock_rate = $3; }
-	|	FETCHW EQ NUM { printf("FW=%d\n",$3); mcpat_param->fetch_width = $3; }
-	|	DECODEW EQ NUM { printf("FW=%d\n",$3); mcpat_param->decode_width = $3; mcpat_param->issue_width = $3; }
-        |	ISSUEW EQ NUM { printf("IW=%d\n", $3); mcpat_param->peak_issue_width = $3; }
-        |	COMMITW EQ NUM { printf("CW=%d\n", $3); mcpat_param->commit_width = $3; }
-        |	BASE EQ NUM { printf("BASE=%d\n", $3); mcpat_param->base_stages += $3; mcpat_param->nbase++; }
-	|	MAXBASE EQ NUM { printf("maxBASE=%d\n", $3); mcpat_param->max_base = MAX(mcpat_param->max_base, $3); mcpat_param->nmax_base++; }
-        |	BUFFERS EQ NUM { printf("BUFFERSIZE=%d\n", $3); mcpat_param->instruction_buffer_size = $3; }
-	|	NIQENTRIES EQ NUM { printf("NIQENTRIES=%d\n", $3); if ($3 % 2==0){ mcpat_param->instruction_window_size = $3/2; mcpat_param->fp_instruction_window_size = $3/2; } else { yyerror("numIQEntries must be odd\n"); } }
-        |	NROBENTRIES EQ NUM { printf("NROBENTRIES=%d\n", $3); mcpat_param->ROB_size = $3;  }
-        |	NINTREGS EQ NUM { printf("NINTREGS=%d\n", $3); mcpat_param->phy_Regs_IRF_size = $3;  }
-        |	NFREGS EQ NUM { printf("NFREGS=%d\n", $3); mcpat_param->phy_Regs_FRF_size = $3; }
-        |	SQENTRIES EQ NUM { printf("SQENTRIES=%d\n", $3); mcpat_param->store_buffer_size = $3;  }	
-        |	LQENTRIES EQ NUM { printf("IQENTRIES=%d\n", $3); mcpat_param->load_buffer_size = $3; }
-        |	RASSIZE EQ NUM { printf("RASSIZE=%d\n", $3); mcpat_param->RAS_size = $3; }
-        |	LHISTB EQ NUM { printf("LHISTB=%d\n", $3); mcpat_param->load_predictor[0] = $3; }
-        |	LCTRB EQ NUM { printf("LCTRB=%d\n", $3); mcpat_param->load_predictor[1] = $3; }
-|	LPREDSIZE EQ NUM { printf("LPREDSIZE=%d\n", $3); mcpat_param->load_predictor[2] = $3; if (mcpat_param->load_predictor[0]==0) {mcpat_param->load_predictor[0] = (int) floor(log2((double) $3)); } }
-        |	GPREDSIZE EQ NUM { printf("GPREDSIZE=%d\n", $3); mcpat_param->global_predictor[0] = $3; }
-        |	GCTRB EQ NUM { printf("GCTRB=%d\n", $3); mcpat_param->global_predictor[1] = $3; }
-        |	CPREDSIZE EQ NUM { printf("CPREDSIZE=%d\n", $3); mcpat_param->predictor_chooser[0] = $3; }
-        |	CCTRB EQ NUM { printf("CCTRB=%d\n", $3); mcpat_param->predictor_chooser[1] = $3; }
-        |	BTBE EQ NUM { printf("BTBE=%d\n", $3); mcpat_param->BTB_config = $3; }
-        |	TLBD EQ NUM { printf("TLBD=%d\n", $3); mcpat_param->number_entries_dtlb = $3; }
-	|	TLBI EQ NUM { printf("TLBI=%d\n", $3); mcpat_param->number_entries_itlb = $3; }
-	|	DL1SIZE EQ NUM { printf("DL1SIZE=%d\n", $3); mcpat_param->dcache_config[0] = $3; }
-	|	DL1BSIZE EQ NUM { printf("DL1BSIZE=%d\n", $3); mcpat_param->dcache_config[1] = $3; }		
-	|	DL1ASSOC EQ NUM { printf("DL1ASSOC=%d\n", $3); mcpat_param->dcache_config[2] = $3; mcpat_param->dcache_config[3] = 1; mcpat_param->dcache_config[5] = 32; mcpat_param->dcache_config[6] = 1;}
-	|	D1MSHRS EQ NUM { printf("D1MSHRS=%d\n", $3); mcpat_param->dcache_buffer_sizes[0] = $3; mcpat_param->dcache_buffer_sizes[1] = $3; mcpat_param->dcache_buffer_sizes[2] = $3; }
-	|	WBDL1 EQ NUM { printf("WBDL1=%d\n", $3); mcpat_param->icache_buffer_sizes[3] = $3; }
-	|	HLDL1 EQ NUM { printf("HLDL1=%d\n", $3); mcpat_param->dhit_lat = $3; }		
-	|	RLDL1 EQ NUM { printf("RLDL1=%d\n", $3); mcpat_param->dresp_lat = $3; }		
-	|	IL1SIZE EQ NUM { printf("IL1SIZE=%d\n", $3); mcpat_param->icache_config[0] = $3; }
-	|	IL1BSIZE EQ NUM { printf("IL1BSIZE=%d\n", $3); mcpat_param->icache_config[1] = $3; }		
-	|	IL1ASSOC EQ NUM { printf("IL1ASSOC=%d\n", $3); mcpat_param->icache_config[2] = $3; mcpat_param->icache_config[3] = 1; mcpat_param->icache_config[5] = 32; mcpat_param->icache_config[6] = 1;}
-	|	I1MSHRS EQ NUM { printf("I1MSHRS=%d\n", $3); mcpat_param->icache_buffer_sizes[0] = $3; mcpat_param->icache_buffer_sizes[1] = $3; mcpat_param->icache_buffer_sizes[2] = $3; mcpat_param->icache_buffer_sizes[3] = 0;}
-	|	HLIL1 EQ NUM { printf("HLIL1=%d\n", $3); mcpat_param->ihit_lat = $3; }		
-	|	RLIL1 EQ NUM { printf("RLIL1=%d\n", $3); mcpat_param->iresp_lat = $3; }	
-	|	L2SIZE EQ NUM { printf("L2SIZE=%d\n", $3); mcpat_param->L2_config[0] = $3; }
-	|	L2BSIZE EQ NUM { printf("L2BSIZE=%d\n", $3); mcpat_param->L2_config[1] = $3; }		
-	|	L2ASSOC EQ NUM { printf("L2ASSOC=%d\n", $3); mcpat_param->L2_config[2] = $3; mcpat_param->L2_config[3] = 1; mcpat_param->L2_config[5] = 32; mcpat_param->L2_config[6] = 1;}
-	|	L2MSHRS EQ NUM { printf("L2MSHRS=%d\n", $3); mcpat_param->L2_buffer_sizes[0] = $3; mcpat_param->L2_buffer_sizes[1] = $3; mcpat_param->L2_buffer_sizes[2] = $3; }
-	|	WBL2 EQ NUM { printf("WBL2=%d\n", $3); mcpat_param->L2_buffer_sizes[3] = $3; }
-	|	HLL2 EQ NUM { printf("HLL2=%d\n", $3); mcpat_param->l2hit_lat = $3; }		
-	|	RLL2 EQ NUM { printf("RLL2=%d\n", $3); mcpat_param->l2resp_lat = $3; }		
+                X86 { mcpat_param->isa_x86 = 1; }
+        |	MEM_MODE EQ STR { printf("MEM_TYPE: %s\n", $3); }
+        |	SYSCLK EQ NUM { mcpat_param->clock_rate = $3; }
+	|	FETCHW EQ NUM { mcpat_param->fetch_width = $3; }
+	|	DECODEW EQ NUM {
+	               mcpat_param->decode_width = $3;
+		       mcpat_param->issue_width = $3; }
+        |	ISSUEW EQ NUM { mcpat_param->peak_issue_width = $3; }
+        |	COMMITW EQ NUM { mcpat_param->commit_width = $3; }
+        |	BASE EQ NUM { mcpat_param->base_stages += $3; mcpat_param->nbase++; }
+	|	MAXBASE EQ NUM {
+	               mcpat_param->max_base = MAX(mcpat_param->max_base, $3);
+		       mcpat_param->nmax_base++; }
+        |	BUFFERS EQ NUM { mcpat_param->instruction_buffer_size = $3; }
+	|	NIQENTRIES EQ NUM {
+	               if ($3 % 2==0){
+			   mcpat_param->instruction_window_size = $3/2;
+			   mcpat_param->fp_instruction_window_size = $3/2;
+		       } else { yyerror("numIQEntries must be odd\n"); } }
+        |	NROBENTRIES EQ NUM { mcpat_param->ROB_size = $3;  }
+        |	NINTREGS EQ NUM { mcpat_param->phy_Regs_IRF_size = $3;  }
+        |	NFREGS EQ NUM { mcpat_param->phy_Regs_FRF_size = $3; }
+        |	SQENTRIES EQ NUM { mcpat_param->store_buffer_size = $3;  }	
+        |	LQENTRIES EQ NUM { mcpat_param->load_buffer_size = $3; }
+        |	RASSIZE EQ NUM { mcpat_param->RAS_size = $3; }
+        |	LHISTB EQ NUM { mcpat_param->load_predictor[0] = $3; }
+        |	LCTRB EQ NUM { mcpat_param->load_predictor[1] = $3; }
+	|	LPREDSIZE EQ NUM {
+	               mcpat_param->load_predictor[2] = $3;
+		       if (mcpat_param->load_predictor[0]==0) {
+			   mcpat_param->load_predictor[0] = (int) floor(log2((double) $3));
+		       } }
+        |	GPREDSIZE EQ NUM { mcpat_param->global_predictor[0] = $3; }
+        |	GCTRB EQ NUM { mcpat_param->global_predictor[1] = $3; }
+        |	CPREDSIZE EQ NUM { mcpat_param->predictor_chooser[0] = $3; }
+        |	CCTRB EQ NUM { mcpat_param->predictor_chooser[1] = $3; }
+        |	BTBE EQ NUM { mcpat_param->BTB_config = $3; }
+        |	TLBD EQ NUM { mcpat_param->number_entries_dtlb = $3; }
+	|	TLBI EQ NUM { mcpat_param->number_entries_itlb = $3; }
+	|	DL1SIZE EQ NUM { mcpat_param->dcache_config[0] = $3; }
+	|	DL1BSIZE EQ NUM { mcpat_param->dcache_config[1] = $3; }		
+	|	DL1ASSOC EQ NUM {
+	                mcpat_param->dcache_config[2] = $3;
+			mcpat_param->dcache_config[3] = 1;
+			mcpat_param->dcache_config[5] = 32;
+			mcpat_param->dcache_config[6] = 1;}
+	|	D1MSHRS EQ NUM {
+	                mcpat_param->dcache_buffer_sizes[0] = $3;
+			mcpat_param->dcache_buffer_sizes[1] = $3;
+			mcpat_param->dcache_buffer_sizes[2] = $3; }
+	|	WBDL1 EQ NUM { mcpat_param->icache_buffer_sizes[3] = $3; }
+	|	HLDL1 EQ NUM { mcpat_param->dhit_lat = $3; }		
+	|	RLDL1 EQ NUM { mcpat_param->dresp_lat = $3; }		
+	|	IL1SIZE EQ NUM { mcpat_param->icache_config[0] = $3; }
+	|	IL1BSIZE EQ NUM { mcpat_param->icache_config[1] = $3; }		
+	|	IL1ASSOC EQ NUM {
+	                mcpat_param->icache_config[2] = $3;
+			mcpat_param->icache_config[3] = 1;
+			mcpat_param->icache_config[5] = 32;
+			mcpat_param->icache_config[6] = 1;}
+	|	I1MSHRS EQ NUM {
+	                mcpat_param->icache_buffer_sizes[0] = $3;
+			mcpat_param->icache_buffer_sizes[1] = $3;
+			mcpat_param->icache_buffer_sizes[2] = $3;
+			mcpat_param->icache_buffer_sizes[3] = 0;}
+	|	HLIL1 EQ NUM { mcpat_param->ihit_lat = $3; }		
+	|	RLIL1 EQ NUM { mcpat_param->iresp_lat = $3; }	
+	|	L2SIZE EQ NUM { mcpat_param->L2_config[0] = $3; }
+	|	L2BSIZE EQ NUM { mcpat_param->L2_config[1] = $3; }		
+	|	L2ASSOC EQ NUM {
+	                mcpat_param->L2_config[2] = $3;
+			mcpat_param->L2_config[3] = 1;
+			mcpat_param->L2_config[5] = 32;
+			mcpat_param->L2_config[6] = 1;}
+	|	L2MSHRS EQ NUM {
+	                mcpat_param->L2_buffer_sizes[0] = $3;
+			mcpat_param->L2_buffer_sizes[1] = $3;
+			mcpat_param->L2_buffer_sizes[2] = $3; }
+	|	WBL2 EQ NUM { mcpat_param->L2_buffer_sizes[3] = $3; }
+	|	HLL2 EQ NUM { mcpat_param->l2hit_lat = $3; }		
+	|	RLL2 EQ NUM { mcpat_param->l2resp_lat = $3; }		
 		
-stats:		DECODINSTS WS NUM { printf("DECODED INSTRUCTIONS: %d\n",$3); mcpat_stats->total_instructions = $3; }
-	|	BRANCHPRED WS NUM { printf("BRANCH: %d\n",$3); mcpat_stats->branch_instructions = $3; }
-	|	BRANCHERR WS NUM { printf("BRANCHERR: %d\n",$3); mcpat_stats->branch_mispredictions = $3; }
-	|	IEWLOAD WS NUM { printf("IEWLOAD: %d\n",$3); mcpat_stats->load_instructions = $3; }
-	|	IEWSTORE WS NUM { printf("IEWSTORE: %d\n",$3); mcpat_stats->store_instructions = $3; }
-	|	CINT WS NUM { printf("CINT: %d\n",$3); mcpat_stats->committed_int_instructions = $3; }
-	|	CFP WS NUM { printf("CFP: %d\n",$3); mcpat_stats->committed_fp_instructions = $3; }
-	|	IPC WS FLOAT { printf("IPC: %f\n",$3); mcpat_stats->pipeline_duty_cycle = $3; }
-	|	NCYCLES WS NUM { printf("NCYCLES: %d\n",$3); mcpat_stats->total_cycles = $3; }
-	|	ICYCLES WS NUM { printf("ICYCLES: %d\n",$3); mcpat_stats->idle_cycles = $3; }
-	|	ROBREADS WS NUM { printf("ROBREADS: %d\n",$3); mcpat_stats->ROB_reads = $3; }			       
-	|	ROBWRITES WS NUM { printf("ROBWRITES: %d\n",$3); mcpat_stats->ROB_writes = $3; }
-	|	RE_INT_LKUP WS NUM { printf("RE_INT_LKUP: %d\n",$3); mcpat_stats->rename_reads = $3; }
-	|	RE_INT_OP WS NUM { printf("RE_INT_OP: %d\n",$3); mcpat_stats->rename_writes = $3; }
-	|	RE_FP_LKUP WS NUM { printf("RE_FP_LKUP: %d\n",$3); mcpat_stats->fp_rename_reads = $3; }
-	|	RE_FP_OP WS NUM { printf("RE_FP_OP: %d\n",$3); mcpat_stats->fp_rename_writes = $3; }
-	|	IQ_INT_R WS NUM { printf("IQ_INT_R: %d\n",$3); mcpat_stats->inst_window_reads = $3; }
-	|	IQ_INT_W WS NUM { printf("IQ_INT_W: %d\n",$3); mcpat_stats->inst_window_writes = $3; }
-	|	IQ_INT_WA WS NUM { printf("IQ_INT_WA: %d\n",$3); mcpat_stats->inst_window_wakeup_accesses = $3; }		               |       IQ_FP_QR WS NUM { printf("IQ_FP_QR: %d\n",$3); mcpat_stats->fp_inst_window_reads = $3; }
-	|	IQ_FP_QW WS NUM { printf("IQ_FP_QW: %d\n",$3); mcpat_stats->fp_inst_window_writes = $3; }
-	|	IQ_FP_QWA WS NUM { printf("IQ_FP_QWA: %d\n",$3); mcpat_stats->fp_inst_window_wakeup_accesses = $3; }
-	|	INT_RG_R WS NUM { printf("INT_RG_R: %d\n",$3); mcpat_stats->int_regfile_reads = $3; }
-        |	INT_RG_W WS NUM { printf("INT_RG_W: %d\n",$3); mcpat_stats->int_regfile_writes = $3; }
-	|	FP_RG_R WS NUM { printf("FP_RG_R: %d\n",$3); mcpat_stats->float_regfile_reads = $3; }
-	|	FP_RG_W WS NUM { printf("FP_RG_W: %d\n",$3); mcpat_stats->float_regfile_writes = $3; }
-	|	COMCALLS WS NUM { printf("COMCALLS: %d\n",$3); mcpat_stats->function_calls = $3; }
-	|	INTDIV WS NUM { printf("INTDIV: %d\n",$3); mcpat_stats->IntDiv *= $3; }
-        |	INTMULT WS NUM { printf("INTMULT: %d\n",$3); mcpat_stats->IntMult *= $3; }
-	|	INT_ALU_ACC WS NUM { printf("INT_ALU_ACC: %d\n",$3); mcpat_stats->ialu_accesses = $3; }
-	|	FP_ALU_ACC WS NUM { printf("FP_ALU_ACC: %d\n",$3); mcpat_stats->fpu_accesses = $3; mcpat_stats->cdb_fpu_accesses = $3; }       |       BTBLKUP WS NUM { printf("BTBLKUP: %d\n",$3); mcpat_stats->btb_read_accesses = $3; }
-	|	BTBUP WS NUM { printf("BTBUP: %d\n",$3); mcpat_stats->btb_write_accesses = $3; }
-	|	DTB_MISS WS NUM { printf("DTB_MISS: %d\n",$3); mcpat_stats->dtlb_total_misses = $3; }
-	|	DTB_ACC WS NUM { printf("DTB_ACC: %d\n",$3); mcpat_stats->dtlb_total_accesses = $3; }
-	|	ITB_MISS WS NUM { printf("ITB_MISS: %d\n",$3); mcpat_stats->itlb_total_misses = $3; }
-	|	ITB_ACC WS NUM { printf("ITB_ACC: %d\n",$3); mcpat_stats->itlb_total_accesses = $3; }
-	|	D1_ACC WS NUM { printf("D1_ACC: %d\n",$3); mcpat_stats->overall_access[0] = $3; }
-	|	D1_MISS WS NUM { printf("D1_MISS: %d\n",$3); mcpat_stats->overall_misses[0] = $3; }
-	|	D1_WRACC WS NUM { printf("D1_WRACC: %d\n",$3); mcpat_stats->WriteReq_access[0] = $3; }
-	|	D1_WRMISS WS NUM { printf("D1_WRMISS: %d\n",$3); mcpat_stats->WriteReq_misses[0] = $3; }
-	|	D1_WRHITS WS NUM { printf("D1_WRHITS: %d\n",$3); mcpat_stats->WriteReq_hits[0] = $3; }
-	|	D1_WRBACK WS NUM { printf("D1_WRBACK: %d\n",$3); mcpat_stats->Writeback_accesses[0] = $3; }
-	|	I1_ACC WS NUM { printf("I1_ACC: %d\n",$3); mcpat_stats->overall_access[1] = $3; }
-	|	I1_MISS WS NUM { printf("I1_MISS: %d\n",$3); mcpat_stats->overall_misses[1] = $3; }
-	|	I1_WRACC WS NUM { printf("I1_WRACC: %d\n",$3); mcpat_stats->WriteReq_access[1] = $3; }
-	|	I1_WRMISS WS NUM { printf("I1_WRMISS: %d\n",$3); mcpat_stats->WriteReq_misses[1] = $3; }
-	|	I1_WRHITS WS NUM { printf("I1_WRHITS: %d\n",$3); mcpat_stats->WriteReq_hits[1] = $3; }
-	|	I1_WRBACK WS NUM { printf("I1_WRBACK: %d\n",$3); mcpat_stats->Writeback_accesses[1] = $3; }
-	|	L2_ACC WS NUM { printf("L2_ACC: %d\n",$3); mcpat_stats->overall_access[2] = $3; }
-	|	L2_MISS WS NUM { printf("L2_MISS: %d\n",$3); mcpat_stats->overall_misses[2] = $3; }
-	|	L2_WRACC WS NUM { printf("L2_WRACC: %d\n",$3); mcpat_stats->WriteReq_access[2] = $3; }
-	|	L2_WRMISS WS NUM { printf("L2_WRMISS: %d\n",$3); mcpat_stats->WriteReq_misses[2] = $3; }
-	|	L2_WRBACK WS NUM { printf("L2_WRBACK: %d\n",$3); mcpat_stats->Writeback_accesses[2] = $3; }
-	|	L2_WRBMISS WS NUM { printf("L2_WRBMISS: %d\n",$3); mcpat_stats->Writeback_misses = $3; }		
+stats:		DECODINSTS WS NUM { mcpat_stats->total_instructions = $3; }
+	|	BRANCHPRED WS NUM { mcpat_stats->branch_instructions = $3; }
+	|	BRANCHERR WS NUM { mcpat_stats->branch_mispredictions = $3; }
+	|	IEWLOAD WS NUM { mcpat_stats->load_instructions = $3; }
+	|	IEWSTORE WS NUM { mcpat_stats->store_instructions = $3; }
+	|	CINT WS NUM { mcpat_stats->committed_int_instructions = $3; }
+	|	CFP WS NUM { mcpat_stats->committed_fp_instructions = $3; }
+	|	IPC WS FLOAT { mcpat_stats->pipeline_duty_cycle = $3; }
+	|	NCYCLES WS NUM { mcpat_stats->total_cycles = $3; }
+	|	ICYCLES WS NUM { mcpat_stats->idle_cycles = $3; }
+	|	ROBREADS WS NUM { mcpat_stats->ROB_reads = $3; }			       
+	|	ROBWRITES WS NUM { mcpat_stats->ROB_writes = $3; }
+	|	RE_INT_LKUP WS NUM { mcpat_stats->rename_reads = $3; }
+	|	RE_INT_OP WS NUM { mcpat_stats->rename_writes = $3; }
+	|	RE_FP_LKUP WS NUM { mcpat_stats->fp_rename_reads = $3; }
+	|	RE_FP_OP WS NUM { mcpat_stats->fp_rename_writes = $3; }
+	|	IQ_INT_R WS NUM { mcpat_stats->inst_window_reads = $3; }
+	|	IQ_INT_W WS NUM { mcpat_stats->inst_window_writes = $3; }
+	|	IQ_INT_WA WS NUM { mcpat_stats->inst_window_wakeup_accesses = $3; }
+	|       IQ_FP_QR WS NUM { mcpat_stats->fp_inst_window_reads = $3; }
+	|	IQ_FP_QW WS NUM { mcpat_stats->fp_inst_window_writes = $3; }
+	|	IQ_FP_QWA WS NUM { mcpat_stats->fp_inst_window_wakeup_accesses = $3; }
+	|	INT_RG_R WS NUM { mcpat_stats->int_regfile_reads = $3; }
+        |	INT_RG_W WS NUM { mcpat_stats->int_regfile_writes = $3; }
+	|	FP_RG_R WS NUM { mcpat_stats->float_regfile_reads = $3; }
+	|	FP_RG_W WS NUM { mcpat_stats->float_regfile_writes = $3; }
+	|	COMCALLS WS NUM { mcpat_stats->function_calls = $3; }
+	|	INTDIV WS NUM { mcpat_stats->IntDiv *= $3; }
+        |	INTMULT WS NUM { mcpat_stats->IntMult *= $3; }
+	|	INT_ALU_ACC WS NUM { mcpat_stats->ialu_accesses = $3; }
+	|	FP_ALU_ACC WS NUM {
+	                 mcpat_stats->fpu_accesses = $3;
+			 mcpat_stats->cdb_fpu_accesses = $3; }
+	|       BTBLKUP WS NUM { mcpat_stats->btb_read_accesses = $3; }
+	|	BTBUP WS NUM { mcpat_stats->btb_write_accesses = $3; }
+	|	DTB_MISS WS NUM { mcpat_stats->dtlb_total_misses = $3; }
+	|	DTB_ACC WS NUM { mcpat_stats->dtlb_total_accesses = $3; }
+	|	ITB_MISS WS NUM { mcpat_stats->itlb_total_misses = $3; }
+	|	ITB_ACC WS NUM { mcpat_stats->itlb_total_accesses = $3; }
+	|	D1_ACC WS NUM { mcpat_stats->overall_access[0] = $3; }
+	|	D1_MISS WS NUM { mcpat_stats->overall_misses[0] = $3; }
+	|	D1_WRACC WS NUM { mcpat_stats->WriteReq_access[0] = $3; }
+	|	D1_WRMISS WS NUM { mcpat_stats->WriteReq_misses[0] = $3; }
+	|	D1_WRHITS WS NUM { mcpat_stats->WriteReq_hits[0] = $3; }
+	|	D1_WRBACK WS NUM { mcpat_stats->Writeback_accesses[0] = $3; }
+	|	I1_ACC WS NUM { mcpat_stats->overall_access[1] = $3; }
+	|	I1_MISS WS NUM { mcpat_stats->overall_misses[1] = $3; }
+	|	I1_WRACC WS NUM { mcpat_stats->WriteReq_access[1] = $3; }
+	|	I1_WRMISS WS NUM { mcpat_stats->WriteReq_misses[1] = $3; }
+	|	I1_WRHITS WS NUM { mcpat_stats->WriteReq_hits[1] = $3; }
+	|	I1_WRBACK WS NUM { mcpat_stats->Writeback_accesses[1] = $3; }
+	|	L2_ACC WS NUM { mcpat_stats->overall_access[2] = $3; }
+	|	L2_MISS WS NUM { mcpat_stats->overall_misses[2] = $3; }
+	|	L2_WRACC WS NUM { mcpat_stats->WriteReq_access[2] = $3; }
+	|	L2_WRMISS WS NUM { mcpat_stats->WriteReq_misses[2] = $3; }
+	|	L2_WRBACK WS NUM { mcpat_stats->Writeback_accesses[2] = $3; }
+	|	L2_WRBMISS WS NUM { mcpat_stats->Writeback_misses = $3; }		
 	;
 
 %%
-// example code for RapidXML API
 
+// this function has C++ style
 void xmlParser()
 {
-    /* cout << "Parsing my beer journal..." << endl; */
-    /* xml_document<> doc; */
-    /* xml_node<> * root_node; */
-    /* // Read the xml file into a vector */
-    /* ifstream theFile ("beerJournal.xml"); */
-    /* vector<char> buffer((istreambuf_iterator<char>(theFile)), istreambuf_iterator<char>()); */
-    /* buffer.push_back('\0'); */
-    /* // Parse the buffer using the xml file parsing library into doc  */
-    /* doc.parse<0>(&buffer[0]); */
-    /* // Find our root node */
-    /* root_node = doc.first_node("MyBeerJournal"); */
-    /* // Iterate over the brewerys */
-    /* for (xml_node<> * brewery_node = root_node->first_node("Brewery"); brewery_node; brewery_node = brewery_node->next_sibling()) */
-    /* 	{ */
-    /* 	    printf("I have visited %s in %s. ",  */
-    /* 		   brewery_node->first_attribute("name")->value(), */
-    /* 		   brewery_node->first_attribute("location")->value()); */
-    /*         // Interate over the beers */
-    /* 	    for(xml_node<> * beer_node = brewery_node->first_node("Beer"); beer_node; beer_node = beer_node->next_sibling()) */
-    /* 		{ */
-    /* 		    printf("On %s, I tried their %s which is a %s. ",  */
-    /* 			   beer_node->first_attribute("dateSampled")->value(), */
-    /* 			   beer_node->first_attribute("name")->value(),  */
-    /* 			   beer_node->first_attribute("description")->value()); */
-    /* 		    printf("I gave it the following review: %s", beer_node->value()); */
-    /* 		} */
-    /* 	    cout << endl; */
-    /* 	} */
+    char *error_msg = "Error in template structure! Quitting";
+    // copying template
+    copy("template.xml", "out.xml");
+    // if no errors then
+    cout << "Parsing template..." << endl;
+    xml_document<> doc;
+    xml_node<> * root_node;
+    // Read the xml file into a vector
+    ifstream theTemplate (xml_temp);
+    vector<char> buffer((istreambuf_iterator<char>(theTemplate)), istreambuf_iterator<char>());
+    buffer.push_back('\0');
+    // Parse the buffer using the xml file parsing library into doc
+    doc.parse<0>(&buffer[0]);
+    // Find our root node
+    root_node = doc.first_node("component");
+    if ((strcmp(root_node->first_attribute("id")->value(), "root"))&&
+	(strcmp(root_node->first_attribute("name")->value(), "root")) {
+	cout << error_msg << endl;
+	unlink("out.xml");
+	exit(-1);
+    }
+    // system node
+    sys_node = root_node->first_node("component");
+    if ((strcmp(root_node->first_attribute("id")->value(), "system"))&&
+	(strcmp(root_node->first_attribute("name")->value(), "system")) {
+	cout << error_msg << endl;
+	unlink("out.xml");
+	exit(-1);
+    }
+    /* SYSTEM PARAMS AND STATS */
+    
 }
 
 static struct option long_options[] = {
@@ -376,6 +426,7 @@ static struct option long_options[] = {
 static void usage(int i)
 {
 	printf(
+	        "gem5ToMcPAT v%s 2016\n"
 		"Usage:  gem5ToMcPAT [OPTIONS]\n"
 		"Launch parser gem5ToMcPAT\n"
 		"Options:\n"
@@ -383,8 +434,8 @@ static void usage(int i)
 		"  -c <file>, --config=<file>: config.ini file (not JSON!)\n"
 		"  -s <file>, --stats=<file>: statistics file\n"
 		"  -o <file>, --output=<output>: XML output\n"
-		"  -h, --help: displays this message\n\n"
-	);
+		"  -h, --help: displays this message\n\n",
+	VERSION);
 	exit(i);
 }
 
@@ -447,7 +498,7 @@ static int handle_options(int argc, char **argv)
 				fclose(stats_fptr);
 				usage(-3);
 			}
-		break;
+			break;
 		case 'x':
 	        case 'o': break;
 		case '?':
@@ -481,6 +532,8 @@ void init_structs()
 /* function to report errors */
 void yyerror(const char *s, ...)
 {
+    // error
+    ERROR = 1;
     printf("%d: error: %s\n", yylineno, s);
     if (yyin == config_fptr) {
 	error_list->config[error_list->n_config] = strdup(s);
@@ -502,6 +555,7 @@ void display_errors()
 	return;
     } 
 
+
     printf("Errors in config.ini: %d\n", error_list->n_config);
     for(i=0; i < error_list->n_config; i++) {
 	printf("%d: %s\n", error_list->config_l[i], error_list->config[i]);
@@ -517,6 +571,10 @@ void display_errors()
 // main function		      
 int main(int argc, char *argv[])
 {
+    // no arguments
+    if (argc == 1) {
+	usage(0);
+    }
     // check options
     int result = handle_options(argc, argv);
     
@@ -531,6 +589,7 @@ int main(int argc, char *argv[])
 	usage(-2);
     }
 
+    // initializing all the structures needed
     init_structs();
     
     // parse config.ini
@@ -543,11 +602,11 @@ int main(int argc, char *argv[])
     yyin = stats_fptr;
     yyparse();
     fclose(yyin);
-
-    //check_stats();
     
-    // fill template.xml
-    //fill_xml();
+    // fill template.xml if no errors
+    // otherwise it makes no sense
+    if (!ERROR)
+	xmlParser();
 
     display_errors();
     
