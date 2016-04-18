@@ -394,7 +394,27 @@ void xmlParser() throw()
     findAndSetValue(bp_node, "param", "load_predictor", make_tuple(mcpat_param->load_predictor[0], mcpat_param->load_predictor[1], mcpat_param->load_predictor[2]));
     findAndSetValue(bp_node, "param", "global_predictor", make_tuple(mcpat_param->global_predictor[0], mcpat_param->global_predictor[1]));
     findAndSetValue(bp_node, "param", "predictor_chooser", make_tuple(mcpat_param->predictor_chooser[0], mcpat_param->predictor_chooser[1]));
+
+    /* ITLB */
+    xml_node<> *itlb_node = bp_node->next_sibling();
+    checkNode(itlb_node, "system.core0.itlb", "itlb");
     
+    /* ICACHE */
+    xml_node<> *icache_node = itlb_node->next_sibling();
+    checkNode(icache_node, "system.core0.icache", "icache");
+    
+    /* DTLB */
+    xml_node<> *dtlb_node = icache_node->next_sibling();
+    checkNode(dtlb_node, "system.core0.dtlb", "dtlb");
+    
+    /* DCACHE */
+    xml_node<> *dcache_node = dtlb_node->next_sibling();
+    checkNode(dcache_node, "system.core0.dcache", "dcache");
+    
+    /* BTB: param tag in the middle that is why double next_sibling() */
+    xml_node<> *btb_node = dcache_node->next_sibling()->next_sibling();
+    checkNode(btb_node, "system.core0.BTB", "BTB");
+
     // finishing message
     cout << BLD "finish filling!" RES << endl;
     std::ofstream output;
