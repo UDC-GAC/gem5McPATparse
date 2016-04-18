@@ -6,8 +6,7 @@
 int PREV_STATE = -1;
 
 %}					
-%x CLK
-%x MEM_MODE			
+%x CLK			
 %x ISA
 
 %x DTLB
@@ -80,8 +79,8 @@ I1                  "system.cpu.icache."
 
     /* MEM MODE */
 <INITIAL>"mem_mode" {
-        printf("LLEGO\n");
-        return MEM_MODE;
+        BEGIN(VALUE);
+        return M_MODE;
 }
 
     /* ISA type */
@@ -707,7 +706,7 @@ I1                  "system.cpu.icache."
     return WS;
 }
 
-<VALUE>"timing" {
+<VALUE>{letter}+ {
     yylval.t_str = strdup(yytext);
     if (PREV_STATE!=-1) {
        BEGIN(PREV_STATE);
