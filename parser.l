@@ -7,6 +7,7 @@ int PREV_STATE = -1;
 
 %}					
 %x CLK
+%x MEM_MODE			
 %x ISA
 
 %x DTLB
@@ -26,6 +27,7 @@ int PREV_STATE = -1;
 digit   	    [0-9]
 double              {digit}+"."{digit}+			
 letter              [a-zA-Z]
+str                 {letter}+			
 ws                  [ ]			
 eq                  "="
 ignore              [a-zA-Z0-9\-\/\[\]\.\_\:\#\(\)\+\,\%\'\;]+					
@@ -67,21 +69,24 @@ I1                  "system.cpu.icache."
 %%			
 
     /* CLOCK */
-<INITIAL>"[system.clk_domain]\n" {
-        /* printf("clk domain:(%s)\n", yytext); */
+<INITIAL>"[system.clk_domain]" {
 	BEGIN(CLK);
 }
 
 <CLK>"clock" {
-        /* printf("SYS CLK\n"); */
         BEGIN(VALUE);
         return SYSCLK;
+}
+
+    /* MEM MODE */
+<INITIAL>"mem_mode" {
+        printf("LLEGO\n");
+        return MEM_MODE;
 }
 
     /* ISA type */
 
 <INITIAL>"[system.cpu.isa]\n" {
-        /* printf("type found\n"); */
         BEGIN(ISA);
 }
 
@@ -93,125 +98,106 @@ I1                  "system.cpu.icache."
     /* core parameters */
     /* FETCHWIDTH */
 <INITIAL>{fetchWidth} {
-        /* printf("FETCH WIDTH\n"); */
         BEGIN(VALUE);
         return FETCHW;        
 }
 
     /* DECODEWIDTH */
 <INITIAL>{decodeWidth} {
-        /* printf("DECODE WIDTH\n"); */
         BEGIN(VALUE);
         return DECODEW;        
 }
 
     /* ISSUEWIDTH */
 <INITIAL>{issueWidth} {
-        /* printf("ISSUE WIDTH\n"); */
         BEGIN(VALUE);
         return ISSUEW;        
 }
 
     /* COMMITWIDTH */
 <INITIAL>{commitWidth} {
-        /* printf("COMMIT WIDTH\n"); */
         BEGIN(VALUE);
         return COMMITW;        
 }
 
     /* fetchBufferSize */
 <INITIAL>{fetchBufferSize} {
-        /* printf("fetch buffer size\n"); */
         BEGIN(VALUE);
         return BUFFERS;        
 }
 
     /* numIQEntries */
 <INITIAL>{numIQEntries} {
-        /* printf("numIQEntries\n"); */
         BEGIN(VALUE);
         return NIQENTRIES;        
 }
 
     /* numROBEntries */
 <INITIAL>{numROBEntries} {
-        /* printf("NUMROBENTRIES\n"); */
         BEGIN(VALUE);
         return NROBENTRIES;        
 }
 
     /* numPhysIntRegs */
 <INITIAL>{numPhysIntRegs} {
-        /* printf("numPhysIntRegs\n"); */
         BEGIN(VALUE);
         return NINTREGS;        
 }
 
     /* numPhysFloatRegs */
 <INITIAL>{numPhysFloatRegs} {
-        /* printf("numPhysFloatRegs\n"); */
         BEGIN(VALUE);
         return NFREGS;        
 }
 
     /* SQEntries */
 <INITIAL>{SQEntries} {
-        /* printf("SQEntries\n"); */
         BEGIN(VALUE);
         return SQENTRIES;        
 }
     /* LQEntries */
 <INITIAL>{LQEntries} {
-        /* printf("LQEntries\n"); */
         BEGIN(VALUE);
         return LQENTRIES;        
 }
     /* RASSize */
 <INITIAL>{RASSize} {
-        /* printf("RASSIZE\n"); */
         BEGIN(VALUE);
         return RASSIZE;        
 }
 
     /* BRANCH PREDICTOR */
 <INITIAL>{lHistBits} {
-        /* printf("lHistBits\n"); */
         BEGIN(VALUE);
         return LHISTB;       
 }
 
 <INITIAL>{lCtrBits} {
-        /* printf("lCtrBits\n"); */
         BEGIN(VALUE);
         return LCTRB;       
 }
 
 <INITIAL>{lPredictorSize} {
-        /* printf("lPredictorSize\n"); */
         BEGIN(VALUE);
         return LPREDSIZE;       
 }
 
 <INITIAL>{gPredictorSize} {
-        /* printf("gPredictorSize\n"); */
         BEGIN(VALUE);
         return GPREDSIZE;       
 }
 
 <INITIAL>{gCtrBits} {
-        /* printf("gCtrBits\n"); */
         BEGIN(VALUE);
         return GCTRB;       
 }
 
 <INITIAL>{cPredictorSize} {
-        /* printf("cPredictorSize\n"); */
         BEGIN(VALUE);
         return CPREDSIZE;       
 }
 
 <INITIAL>{cCtrBits} {
-        /* printf("cCtrBits\n"); */
         BEGIN(VALUE);
         return CCTRB;       
 }
@@ -219,7 +205,6 @@ I1                  "system.cpu.icache."
     /* BRANCH PREDICTOR BUFFER */
 
 <INITIAL>{BTBEntries} {
-        /* printf("BTBEntries\n"); */
         BEGIN(VALUE);
         return BTBE;       
 }
@@ -228,23 +213,19 @@ I1                  "system.cpu.icache."
     /* tlb */
 
 <INITIAL>"[system.cpu.dtb]" {
-        /* printf("BEGIN TLB\n"); */
         BEGIN(DTLB);
 }
 
 <INITIAL>"[system.cpu.itb]" {
-        /* printf("BEGIN TLB\n"); */
         BEGIN(ITLB);
 }
 
 <DTLB>"size" {
-        /* printf("size Dtlb\n"); */
         BEGIN(VALUE);
         return TLBD;       
 }
 
 <ITLB>"size" {
-        /* printf("size Itlb\n"); */
         BEGIN(VALUE);
         return TLBI;       
 }
@@ -255,42 +236,36 @@ I1                  "system.cpu.icache."
 }
 
 <DL1>"size" {
-        /* printf("size DL1\n"); */
         PREV_STATE = DL1;
         BEGIN(VALUE);
         return DL1SIZE;
 }
 
 <DL1>"assoc" {
-        /* printf("size DL1\n"); */
         PREV_STATE = DL1;
         BEGIN(VALUE);
         return DL1ASSOC;
 }
 
 <DL1>"mshrs" {
-        /* printf("mshrs\n"); */
         PREV_STATE = DL1;
         BEGIN(VALUE);
         return D1MSHRS;
 }
 
 <DL1>"hit_latency" {
-        /* printf("response_latency\n"); */
         PREV_STATE = DL1;
         BEGIN(VALUE);
         return HLDL1;
 }
 
 <DL1>"response_latency" {
-        /* printf("response_latency\n"); */
         PREV_STATE = DL1;
         BEGIN(VALUE);
         return RLDL1;
 }
 
 <DL1>"write_buffers" {
-        /* printf("size DL1\n"); */
         BEGIN(VALUE);
         return WBDL1;
 }
@@ -310,34 +285,29 @@ I1                  "system.cpu.icache."
 }
 
 <IL1>"size" {
-        /* printf("size IL1\n"); */
         BEGIN(VALUE);
         return IL1SIZE;
 }
 
 <IL1>"assoc" {
-        /* printf("size IL1\n"); */
         PREV_STATE = IL1;
         BEGIN(VALUE);
         return IL1ASSOC;
 }
 
 <IL1>"mshrs" {
-        /* printf("mshrs\n"); */
         PREV_STATE = IL1;
         BEGIN(VALUE);
         return I1MSHRS;
 }
 
 <IL1>"hit_latency" {
-        /* printf("response_latency\n"); */
         PREV_STATE = IL1;
         BEGIN(VALUE);
         return HLIL1;
 }
 
 <IL1>"response_latency" {
-        /* printf("response_latency\n"); */
         PREV_STATE = IL1;
         BEGIN(VALUE);
         return RLIL1;
@@ -348,7 +318,6 @@ I1                  "system.cpu.icache."
 }
 
 <IL1TAGS>"block_size" {
-        /* printf("block size\n"); */
         BEGIN(VALUE);
         return IL1BSIZE;
 }
@@ -360,42 +329,36 @@ I1                  "system.cpu.icache."
 }
 
 <L2>"size" {
-        /* printf("size L2\n"); */
         PREV_STATE = L2;
         BEGIN(VALUE);
         return L2SIZE;
 }
 
 <L2>"assoc" {
-        /* printf("size L2\n"); */
         PREV_STATE = L2;
         BEGIN(VALUE);
         return L2ASSOC;
 }
 
 <L2>"mshrs" {
-        /* printf("mshrs\n"); */
         PREV_STATE = L2;
         BEGIN(VALUE);
         return L2MSHRS;
 }
 
 <L2>"hit_latency" {
-        /* printf("response_latency\n"); */
         PREV_STATE = L2;
         BEGIN(VALUE);
         return HLL2;
 }
 
 <L2>"response_latency" {
-        /* printf("response_latency\n"); */
         PREV_STATE = L2;
         BEGIN(VALUE);
         return RLL2;
 }
 
 <L2>"write_buffers" {
-        /* printf("size DL2\n"); */
         BEGIN(VALUE);
         return WBL2;
 }
@@ -405,7 +368,6 @@ I1                  "system.cpu.icache."
 }
 
 <L2TAGS>"block_size" {
-        /* printf("block size\n"); */
         BEGIN(VALUE);
         return L2BSIZE;
 }
@@ -413,49 +375,41 @@ I1                  "system.cpu.icache."
     /* CALCULATING BASE PARAMETERS (SEE APPENDIX A) */
 
 <INITIAL>{f2DecodeDelay} {
-        /* printf("f2DecodeDelay\n"); */
         BEGIN(VALUE);
         return BASE;        
 }
 
 <INITIAL>{d2RenameDelay} {
-        /* printf("d2RenameDelay\n"); */
         BEGIN(VALUE);
         return BASE;        
 }
 
 <INITIAL>{r2IEWDelay} {
-        /* printf("r2IEWDelay\n"); */
         BEGIN(VALUE);
         return BASE;
 }
 
 <INITIAL>{i2CommitDelay} {
-        /* printf("i2CommitDelay\n"); */
         BEGIN(VALUE);
         return BASE;       
 }
 
 <INITIAL>{c2DecodeDelay} {
-        /* printf("c2DecodeDelay\n"); */
         BEGIN(VALUE);
         return MAXBASE;       
 }
 
 <INITIAL>{c2FetchDelay} {
-        /* printf("c2FetchDelay\n"); */
         BEGIN(VALUE);
         return MAXBASE;       
 }
 
 <INITIAL>{c2IEWDelay} {
-        /* printf("c2IEWDelay\n"); */
         BEGIN(VALUE);
         return MAXBASE;       
 }
 
 <INITIAL>{c2RenameDelay} {
-        /* printf("c2RenameDelay\n"); */
         BEGIN(VALUE);
         return MAXBASE;       
 }
@@ -745,12 +699,23 @@ I1                  "system.cpu.icache."
    /* OBTAINING VALUES DESIRED */
 
 <VALUE>{eq} {
-        return EQ;
+    return EQ;
 }
 
 <DELIM>{ws}+ {
     BEGIN(VALUE);
     return WS;
+}
+
+<VALUE>"timing" {
+    yylval.t_str = strdup(yytext);
+    if (PREV_STATE!=-1) {
+       BEGIN(PREV_STATE);
+       PREV_STATE = -1;
+    } else {
+       BEGIN(INITIAL);
+    }
+    return STR;
 }
 
 <VALUE>{digit}+ {
@@ -776,9 +741,10 @@ I1                  "system.cpu.icache."
 }
 
     /* WHEN NOTHING ELSE MATCHES */
-<*>{ignore}|{eq}|"\n"|" "|.           { /* DO NOTHING */ }
+<*>{ignore}|{eq}|{ws}|"\n"|.           { /* DO NOTHING */ }
 %%
 
 /** Some comments:
- * PREV_STATE allows to return to the previous state
+ * PREV_STATE allows to return to the previous state. It is used when
+ * a tag like [something] contains more than one parameter to catch
  **/
