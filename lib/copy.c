@@ -2,12 +2,12 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 
-void copy(char *source, char *dest)
+void copy(char const *source, char const *dest)
 {
     int childExitStatus;
     pid_t pid;
     int status;
-    char *error_msg = "Error copying template! Quitting...\n";
+    char const *error_msg = "Error copying template! Quitting...\n";
     if (!source || !dest) {
         /* handle as you wish */
     }

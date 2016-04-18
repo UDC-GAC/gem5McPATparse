@@ -28,13 +28,12 @@ using namespace std;
 #define xml_temp "template.xml"
 #endif
 
-#ifndef MAX(X,Y)
+#ifndef MAX
 #define MAX(X,Y) X>Y ? X : Y
 #endif
 
 #define MAX_NUM 1000
 #define MAX_LINE 1000
-
 
 struct t_mcpat_params {
     /* for x86 architectures */
@@ -128,9 +127,6 @@ struct t_mcpat_stats {
     int ialu_accesses = 0;
     int fpu_accesses = 0;
     int mul_accesses = 0;
-    int cdb_alu_accesses = 0;
-    int cdb_mul_accesses = 0;
-    int cdb_fpu_accesses = 0;
     /* btb stats */
     int btb_read_accesses = 0;
     int btb_write_accesses = 0;
@@ -151,8 +147,8 @@ struct t_mcpat_stats {
     int l2_write_misses = 0;
 
     /* aux: default values */
-    int IntDiv = 0; //todo
-    int IntMult = 0; //todo
+    int IntDiv = 0; 
+    int IntMult = 0;
     int overall_access[3] = {0};
     int overall_misses[3] = {0};
     int WriteReq_access[3] = {0};
@@ -174,6 +170,20 @@ struct t_error {
 
 FILE *config_fptr, *stats_fptr;
 
-// declaration
+// function headers
 void usage(int i);
 int handle_options(int argc, char **argv);
+char *make_tuple(int value1, int value2);
+
+// simple function to create a tuple [value],[value]
+char *make_tuple(int value1, int value2)
+{
+    char *aux= (char *) malloc(sizeof(char)*80);;
+    char str1[50], str2[50];
+    snprintf(str1, 50, "%d", value1);
+    strcat(str1, ",");
+    snprintf(str2, 50, "%d", value2);
+    strcat(str1, str2);
+    strcpy(aux, str1);
+    return aux;
+}
