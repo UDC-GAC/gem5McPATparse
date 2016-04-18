@@ -1,180 +1,43 @@
+/*
+ * Copyright (c) 2016 Universidade da Coruña
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are
+ * met: redistributions of source code must retain the above copyright
+ * notice, this list of conditions and the following disclaimer;
+ * redistributions in binary form must reproduce the above copyright
+ * notice, this list of conditions and the following disclaimer in the
+ * documentation and/or other materials provided with the distribution;
+ * neither the name of the copyright holders nor the names of its
+ * contributors may be used to endorse or promote products derived from
+ * this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Authors: Marcos Horro Varela
+ */
 %error-verbose
 %{
-#include <string.h>
-#include <stdio.h>
-#include <errno.h>
-#include <getopt.h>
-#include <stdarg.h>
-#include <stdlib.h>
-#include <iostream>
-#include <fstream>
-#include <vector>
-#include <math.h>
-#include "isa.h"
-#include "lib/copy.h"
-#include "lib/rapidxml.hpp"
-
-using namespace rapidxml;
-using namespace std;
-
-#ifndef VERSION
-#define VERSION "0.0.9"
-#endif
-
-#ifndef xml_temp
-#define xml_temp "template.xml"
-#endif
-
-#ifndef MAX(X,Y)
-#define MAX(X,Y) X>Y ? X : Y
-#endif
-
-#define MAX_NUM 1000
-#define MAX_LINE 1000
+#include "lib/utils.h"
+#include "lib/handle_options.h"
 
 int ERROR = 0;
+int DETAILED = 0;
 
 extern FILE *yyin;
 extern int yylineno;
-
-FILE *config_fptr, *stats_fptr;
-
-struct t_mcpat_params {
-    /* for x86 architectures */
-    int isa_x86 = 0;
-    /* core parameters */
-    int clock_rate;
-    int fetch_width;
-    int decode_width;
-    int issue_width;
-    int peak_issue_width;
-    int commit_width;
-    int instruction_buffer_size;
-    int instruction_window_size;
-    int fp_instruction_window_size;
-    int ROB_size;
-    int phy_Regs_IRF_size;
-    int phy_Regs_FRF_size;
-    int store_buffer_size;
-    int load_buffer_size;
-    int RAS_size;
-    /* to calculate base */
-    int nbase = 0;
-    int base_stages = 0;
-    int nmax_base = 0;
-    int max_base = 0;
-    int pipeline_depth[2] = {INT_EXE, FP_EXE};
-    /* branch predictor */
-    int load_predictor[3] = {0};
-    int global_predictor[2];
-    int predictor_chooser[2];
-    /* branch predictor buffer */
-    int BTB_config;
-    /* cache parameters: TLB and caches */
-    int number_entries_dtlb;
-    int number_entries_itlb;
-    /* cache l1 */
-    int dcache_config[7];
-    int icache_config[7];
-    int dcache_buffer_sizes[4];
-    int icache_buffer_sizes[4];
-
-    int dhit_lat;
-    int dresp_lat;
-    int ihit_lat;
-    int iresp_lat;
-    
-    /* cache l2 */
-    int L2_config[7];
-    int L2_buffer_sizes[4];
-    int l2_clockrate;
-    
-    int l2hit_lat;
-    int l2resp_lat;
-
-    /* ALUs latencies */
-    int lat_IntDiv = 20; //TODO
-    int lat_IntMult = 3; //TODO
-};
-
-struct t_mcpat_stats {
-    /* core statistics */
-    int total_instructions = 0;
-    int branch_instructions = 0;
-    int branch_mispredictions = 0;
-    int load_instructions = 0;
-    int store_instructions = 0;
-    int committed_int_instructions = 0;
-    int committed_fp_instructions = 0;
-    double pipeline_duty_cycle = 0.0;
-    int total_cycles = 0;
-    int idle_cycles = 0;
-    int busy_cycles = 0;
-    int ROB_reads = 0;
-    int ROB_writes = 0;
-    int rename_reads = 0;
-    int rename_writes = 0;
-    int fp_rename_reads = 0;
-    int fp_rename_writes = 0;
-    int inst_window_reads = 0;
-    int inst_window_writes = 0;
-    int inst_window_wakeup_accesses = 0;
-
-    int fp_inst_window_reads = 0;
-    int fp_inst_window_writes = 0;
-    int fp_inst_window_wakeup_accesses = 0;
-    int int_regfile_reads = 0;
-    int int_regfile_writes = 0;
-    int float_regfile_reads = 0;
-    int float_regfile_writes = 0;
-    int function_calls = 0;
-    /* formulas */
-    int ialu_accesses = 0;
-    int fpu_accesses = 0;
-    int mul_accesses = 0;
-    int cdb_alu_accesses = 0;
-    int cdb_mul_accesses = 0;
-    int cdb_fpu_accesses = 0;
-    /* btb stats */
-    int btb_read_accesses = 0;
-    int btb_write_accesses = 0;
-    /* tlb L1 */
-    int dtlb_total_accesses = 0;
-    int dtlb_total_misses = 0;
-    int itlb_total_accesses = 0;
-    int itlb_total_misses = 0;
-    /* l1 cache */
-    int l1_read_accesses = 0;
-    int l1_write_accesses = 0;
-    int l1_read_misses = 0;
-    int l1_write_misses = 0;
-    /* l2 cache */
-    int l2_read_accesses = 0;
-    int l2_write_accesses = 0;
-    int l2_read_misses = 0;
-    int l2_write_misses = 0;
-
-    /* aux: default values */
-    int IntDiv = 0; //todo
-    int IntMult = 0; //todo
-    int overall_access[3] = {0};
-    int overall_misses[3] = {0};
-    int WriteReq_access[3] = {0};
-    int WriteReq_hits[2] = {0}; // i1/d1
-    int WriteReq_misses[3] = {0};
-    int Writeback_accesses[3] = {0};
-    int Writeback_misses = 0; // l2
-};
-
-struct t_error {
-    int n_stat = 0;
-    int stat_l[MAX_NUM] = {0};
-    char *stat[MAX_NUM];
-
-    int n_config = 0;
-    int config_l[MAX_NUM] = {0};
-    char *config[MAX_NUM];
-};
+xml_document<> doc;
 
 struct t_mcpat_params *mcpat_param;
 struct t_mcpat_stats *mcpat_stats;
@@ -191,7 +54,7 @@ void yyrestart(FILE *yyin);
 }
     /* TOKENS PARAMS */			
 %token EQ WS NL
-%token X86 SYSCLK MEM_MODE			
+%token X86 SYSCLK M_MODE			
 %token FETCHW DECODEW ISSUEW COMMITW BASE MAXBASE BUFFERS NIQENTRIES NROBENTRIES NINTREGS NFREGS SQENTRIES LQENTRIES RASSIZE
 %token LHISTB LCTRB LPREDSIZE GPREDSIZE GCTRB CPREDSIZE	CCTRB
 %token BTBE
@@ -213,7 +76,7 @@ void yyrestart(FILE *yyin);
 %start S 			
 %%
 // rules
-S : line { printf("finished parsing!\n\n"); }
+S : line { printf("finished parsing!\n"); }
   ;
 
 /* left recursion better than right recursion: due to stack reasons */
@@ -225,7 +88,7 @@ line : /* empty */
 
 config:
                 X86 { mcpat_param->isa_x86 = 1; }
-        |	MEM_MODE EQ STR { printf("MEM_TYPE: %s\n", $3); }
+        |	M_MODE EQ STR { DETAILED = (!strcmp("detailed", $3));}
         |	SYSCLK EQ NUM { mcpat_param->clock_rate = $3; }
 	|	FETCHW EQ NUM { mcpat_param->fetch_width = $3; }
 	|	DECODEW EQ NUM {
@@ -367,153 +230,104 @@ stats:		DECODINSTS WS NUM { mcpat_stats->total_instructions = $3; }
 
 %%
 
-// this function has C++ style
-void xmlParser()
+/* finds a concrete tag given the name of the tag (type) the value of
+   the attribute name and then sets its value to value */
+void findAndSetValue(xml_node<> *parent, char *type, char *name_value, char *value)
+{
+    int found = 0;
+    for (xml_node<> *node = parent->first_node(type); node; node = node->next_sibling()) {
+    	if (!strcmp(node->first_attribute("name")->value(), name_value)) {
+	    if (!node->first_attribute("value")) {
+		// is this good?
+		cout << "Error: bad structure XML in " << name_value << endl;
+		cout << "Quitting..." << endl;
+		exit(-1);
+	    }
+	    // checked before if this attribute exists
+	    node->remove_attribute(node->first_attribute("value"));
+	    // creating again this attribute and allocating string value
+	    char *value_name = doc.allocate_string(value);
+	    xml_attribute<> *attr = doc.allocate_attribute("value", value_name);
+    	    node->append_attribute(attr);
+	    // found!
+    	    found = 1;
+    	}
+    }
+    if (!found) {
+	// we could make a set of warnings in order to tell the user
+	// that a requested param/stat has not been set
+	cout << type << ": " << name_value << " not found!" << endl;
+    }
+}
+
+void findAndSetIntValue(xml_node<> *parent, char *type, char *name_value, int value)
+{
+    char str[80];
+    snprintf(str, 80, "%d", value);
+    findAndSetValue(parent, type, name_value, str);
+}
+
+void findAndSetFloatValue(xml_node<> *parent, char *type, char *name_value, double value)
+{
+    char str[80];
+    snprintf(str, 80, "%f", value);
+    findAndSetValue(parent, type, name_value, str);
+}
+
+/* xmlParser fills with the correct values the templates and prints in
+   out.xml */
+void xmlParser() throw()
 {
     char *error_msg = "Error in template structure! Quitting";
-    // copying template
-    copy("template.xml", "out.xml");
-    // if no errors then
+    
     cout << "Parsing template..." << endl;
-    xml_document<> doc;
-    xml_node<> * root_node;
     // Read the xml file into a vector
-    ifstream theTemplate (xml_temp);
+    ifstream theTemplate ("out.xml");
     vector<char> buffer((istreambuf_iterator<char>(theTemplate)), istreambuf_iterator<char>());
     buffer.push_back('\0');
     // Parse the buffer using the xml file parsing library into doc
     doc.parse<0>(&buffer[0]);
+    
     // Find our root node
+    xml_node<> *root_node;
     root_node = doc.first_node("component");
-    if ((strcmp(root_node->first_attribute("id")->value(), "root"))&&
-	(strcmp(root_node->first_attribute("name")->value(), "root")) {
-	cout << error_msg << endl;
+    if ((root_node == 0)||
+	(strcmp(root_node->first_attribute("id")->value(), "root"))&&
+	(strcmp(root_node->first_attribute("name")->value(), "root"))) {
+	cout << error_msg << "Component root missing" << endl;
 	unlink("out.xml");
 	exit(-1);
     }
+    
     // system node
+    xml_node<> * sys_node;
     sys_node = root_node->first_node("component");
-    if ((strcmp(root_node->first_attribute("id")->value(), "system"))&&
-	(strcmp(root_node->first_attribute("name")->value(), "system")) {
-	cout << error_msg << endl;
+    if ((sys_node == 0)||
+	(strcmp(sys_node->first_attribute("id")->value(), "system"))&&
+	(strcmp(sys_node->first_attribute("name")->value(), "system"))) {
+	cout << error_msg << "Component system missing" <<endl;
 	unlink("out.xml");
 	exit(-1);
     }
+    
     /* SYSTEM PARAMS AND STATS */
-    
+    findAndSetIntValue(sys_node, "param", "target_core_clockrate", mcpat_param->clock_rate);
+    findAndSetIntValue(sys_node, "stat", "total_cycles", mcpat_stats->total_cycles);
+    findAndSetIntValue(sys_node, "stat", "idle_cycles", mcpat_stats->idle_cycles);
+    findAndSetIntValue(sys_node, "stat", "busy_cycles", mcpat_stats->total_cycles - mcpat_stats->idle_cycles);
+
+    /* CORE PARAMS AND STATS */
+
+    /* CACHES */
+
+    // finishing message
+    cout << BLD "finish filling!" RES << endl;
+    std::ofstream output;
+    output.open ("out.xml");
+    output << doc;
 }
 
-static struct option long_options[] = {
-	{ .name = "xmltemplate",
-	  .has_arg = required_argument,
-	  .flag = NULL,
-	  .val = 0},
-	{ .name = "config",
-	  .has_arg = required_argument,
-	  .flag = NULL,
-	  .val = 0},
-	{ .name = "stats",
-	  .has_arg = required_argument,
-	  .flag = NULL,
-	  .val = 0},
-	{ .name = "output",
-	  .has_arg = required_argument,
-	  .flag = NULL,
-	  .val = 0},
-	{0, 0, 0, 0}
-};
-
-static void usage(int i)
-{
-	printf(
-	        "gem5ToMcPAT v%s 2016\n"
-		"Usage:  gem5ToMcPAT [OPTIONS]\n"
-		"Launch parser gem5ToMcPAT\n"
-		"Options:\n"
-		"  -x <file>, --xmltemplate=<file>: XML template\n"
-		"  -c <file>, --config=<file>: config.ini file (not JSON!)\n"
-		"  -s <file>, --stats=<file>: statistics file\n"
-		"  -o <file>, --output=<output>: XML output\n"
-		"  -h, --help: displays this message\n\n",
-	VERSION);
-	exit(i);
-}
-
-static int check_file(char *arg, FILE **f)
-{
-    *f = fopen(arg, "r");
-    
-    return (*f!=NULL);
-}
-
-static void handle_long_options(struct option option, char *arg)
-{
-	if (!strcmp(option.name, "help"))
-		usage(0);
-
-	if (!strcmp(option.name, "config")) {
-	        if (!check_file(arg, &config_fptr)) {
-			printf("'%s': invalid file\n", arg);
-			fclose(config_fptr);
-			usage(-3);
-		}
-	}
-	if (!strcmp(option.name, "stats")) {
-	        if (!check_file(arg, &stats_fptr)) {
-			printf("'%s': invalid file\n", arg);
-			fclose(stats_fptr);
-			usage(-3);
-		}
-	}
-}
-
-static int handle_options(int argc, char **argv)
-{
-	while (1) {
-		int c;
-		int option_index = 0;
-
-		c = getopt_long (argc, argv, "x:c:s:o:",
-				 long_options, &option_index);
-		if (c == -1)
-			break;
-
-		switch (c) {
-		case 0:
-			handle_long_options(long_options[option_index],
-				optarg);
-			break;
-
-		case 'c':
-                        if (!check_file(optarg, &config_fptr)) {
-				printf("'%s': invalid file\n", optarg);
-				fclose(config_fptr);
-				usage(-3);
-			}
-			break;
-
-		case 's':
-         		if (!check_file(optarg, &stats_fptr)) {
-				printf("'%s': invalid file\n", optarg);
-				fclose(stats_fptr);
-				usage(-3);
-			}
-			break;
-		case 'x':
-	        case 'o': break;
-		case '?':
-		case 'h':
-			usage(0);
-			break;
-
-		default:
-			printf ("?? getopt returned character code 0%o ??\n", c);
-			usage(-1);
-		}
-	}
-	return 0;
-}
-
+/* initializing */
 void init_structs()
 {
     int i;
@@ -529,11 +343,12 @@ void init_structs()
     }
 }
 
-/* function to report errors */
+/* when 'error' is found in the parser */
 void yyerror(const char *s, ...)
 {
-    // error
+    // activating error flag
     ERROR = 1;
+    // showing user that there has been an error and then recording it
     printf("%d: error: %s\n", yylineno, s);
     if (yyin == config_fptr) {
 	error_list->config[error_list->n_config] = strdup(s);
@@ -545,23 +360,23 @@ void yyerror(const char *s, ...)
     }
 }
 
+/* display recorded errors */
 void display_errors()
 {
     int i;
 
     if ((error_list->n_config == 0)&&
 	(error_list->n_stat == 0)) {
-	printf("Parsing was successful!\n");
+	printf(GRN "Parsing was successful!\n" RES);
 	return;
     } 
 
-
-    printf("Errors in config.ini: %d\n", error_list->n_config);
+    printf(RED "Errors in config.ini: %d\n" RES, error_list->n_config);
     for(i=0; i < error_list->n_config; i++) {
 	printf("%d: %s\n", error_list->config_l[i], error_list->config[i]);
     }
 
-    printf("Errors in stats: %d\n", error_list->n_stat);
+    printf(RED "Errors in stats: %d\n" RES, error_list->n_stat);
     for(i=0; i < error_list->n_stat; i++) {
 	printf("%d: %s\n", error_list->stat_l[i], error_list->stat[i]);
     }
@@ -571,6 +386,7 @@ void display_errors()
 // main function		      
 int main(int argc, char *argv[])
 {
+    printf(BLD "gem5ToMcPAT v%s 2016\n" RES, VERSION);
     // no arguments
     if (argc == 1) {
 	usage(0);
@@ -589,26 +405,37 @@ int main(int argc, char *argv[])
 	usage(-2);
     }
 
+    // copying file
+    copy("template.xml", "out.xml");
+    
     // initializing all the structures needed
     init_structs();
     
     // parse config.ini
     yyin = config_fptr;
+    printf("[config.ini]: ");
     yyparse();
     fclose(yyin);
     
     // to clean yyin
     yyrestart(yyin);
     yyin = stats_fptr;
+    printf("[stats.txt]: ");
     yyparse();
     fclose(yyin);
+
+    // in case the simulation is not detailed
+    if (!DETAILED)
+	printf(BLD YEL "Warning: simulation has not been done in detailed memory mode\n"
+	       "Thus there is a lack of stats and some values will be set to zero\n" RES);
     
     // fill template.xml if no errors
     // otherwise it makes no sense
-    if (!ERROR)
-	xmlParser();
+    if (!ERROR) xmlParser();
+    else unlink("out.xml");
 
     display_errors();
-    
+
+    // quiting!
     exit(0);
 }
