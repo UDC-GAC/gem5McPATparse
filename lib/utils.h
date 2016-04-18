@@ -174,6 +174,7 @@ FILE *config_fptr, *stats_fptr;
 void usage(int i);
 int handle_options(int argc, char **argv);
 char *make_tuple(int value1, int value2);
+char *make_tuple(int value1, int value2, int value3);
 
 // simple function to create a tuple [value],[value]
 char *make_tuple(int value1, int value2)
@@ -185,5 +186,21 @@ char *make_tuple(int value1, int value2)
     snprintf(str2, 50, "%d", value2);
     strcat(str1, str2);
     strcpy(aux, str1);
+    return aux;
+}
+
+char *make_tuple(int value1, int value2, int value3)
+{
+    char *aux= (char *) malloc(sizeof(char)*80);;
+    char str1[50], str2[50], str3[50];
+    snprintf(str1, 50, "%d", value1);
+    strcat(str1, ",");
+    snprintf(str2, 50, "%d", value2);
+    strcat(str1, str2);
+    strcat(str1, ",");
+    snprintf(str3, 50, "%d", value3);
+    strcat(str1, str3);
+    strcpy(aux, str1);
+
     return aux;
 }

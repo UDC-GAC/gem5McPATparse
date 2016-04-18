@@ -388,8 +388,13 @@ void xmlParser() throw()
     findAndSetIntValue(core_node, "stat", "cdb_mul_accesses", mcpat_stats->mul_accesses);    
     findAndSetIntValue(core_node, "stat", "cdb_fpu_accesses", mcpat_stats->fpu_accesses);    
     
-    /* CACHES */
-
+    /* BRANCH PREDICTOR */
+    xml_node<> *bp_node = core_node->first_node("component");
+    checkNode(bp_node, "system.core0.predictor", "PBT");
+    findAndSetValue(bp_node, "param", "load_predictor", make_tuple(mcpat_param->load_predictor[0], mcpat_param->load_predictor[1], mcpat_param->load_predictor[2]));
+    findAndSetValue(bp_node, "param", "global_predictor", make_tuple(mcpat_param->global_predictor[0], mcpat_param->global_predictor[1]));
+    findAndSetValue(bp_node, "param", "predictor_chooser", make_tuple(mcpat_param->predictor_chooser[0], mcpat_param->predictor_chooser[1]));
+    
     // finishing message
     cout << BLD "finish filling!" RES << endl;
     std::ofstream output;
