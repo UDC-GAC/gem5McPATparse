@@ -14,8 +14,8 @@
 #include "colors.h"
 #include "isa.h"
 #include "copy.h"
-#include "rapidxml.hpp"
-#include "rapidxml_print.hpp"
+#include "xml/rapidxml.hpp"
+#include "xml/rapidxml_print.hpp"
 
 using namespace rapidxml;
 using namespace std;
