@@ -258,7 +258,7 @@ omitted -->
       <!-- the parameters are capacity,block_width, associativity,bank, throughput w.r.t. core clock, latency w.r.t. core clock,-->
       <param name="buffer_sizes" value="8, 8, 8, 8"/>	
       <!-- all the buffer related are optional -->
-      <param name="clockrate" value="3400"/>
+      <param name="clockrate" value="1000"/>
       <param name="vdd" value="0"/><!-- 0 means using ITRS default vdd -->
       <param name="ports" value="1,1,1"/>
       <!-- number of r, w, and rw search ports -->
@@ -279,7 +279,7 @@ omitted -->
       <!-- the parameters are capacity,block_width, associativity,bank, throughput w.r.t. core clock, latency w.r.t. core clock,-->
       <param name="buffer_sizes" value="8, 8, 8, 8"/>	
       <!-- all the buffer related are optional -->
-      <param name="clockrate" value="3400"/>
+      <param name="clockrate" value="1000"/>
       <param name="vdd" value="0"/><!-- 0 means using ITRS default vdd -->
       <param name="ports" value="1,1,1"/>
       <!-- number of r, w, and rw search ports -->
@@ -299,7 +299,7 @@ omitted -->
       <!-- the parameters are capacity,block_width, associativity, bank, throughput w.r.t. core clock, latency w.r.t. core clock,output_width, cache policy -->
       <param name="buffer_sizes" value="16, 16, 16, 16"/>
       <!-- cache controller buffer sizes: miss_buffer_size(MSHR),fill_buffer_size,prefetch_buffer_size,wb_buffer_size-->	
-      <param name="clockrate" value="3400"/>
+      <param name="clockrate" value="1000"/>
       <param name="vdd" value="0"/><!-- 0 means using ITRS default vdd -->
       <param name="ports" value="1,1,1"/>
       <!-- number of r, w, and rw ports -->
