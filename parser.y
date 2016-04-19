@@ -415,6 +415,14 @@ void xmlParser() throw()
     /* ICACHE */
     xml_node<> *icache_node = itlb_node->next_sibling();
     checkNode(icache_node, "system.core0.icache", "icache");
+    findAndSetValue(icache_node, "param", "icache_config", make_tuple(8,mcpat_param->icache_config[0],
+								       mcpat_param->icache_config[1],
+								       mcpat_param->icache_config[2],
+								       1,mcpat_param->icache_config[4],
+								      mcpat_param->icache_config[4], 32, 0));
+    findAndSetValue(icache_node, "param", "buffer_sizes", make_tuple(4,mcpat_param->icache_buffer_sizes[0],
+								     mcpat_param->icache_buffer_sizes[1],
+								     mcpat_param->icache_buffer_sizes[2],0));
     
     /* DTLB */
     xml_node<> *dtlb_node = icache_node->next_sibling();
@@ -426,7 +434,16 @@ void xmlParser() throw()
     /* DCACHE */
     xml_node<> *dcache_node = dtlb_node->next_sibling();
     checkNode(dcache_node, "system.core0.dcache", "dcache");
-    
+    findAndSetValue(dcache_node, "param", "dcache_config", make_tuple(8,mcpat_param->dcache_config[0],
+								       mcpat_param->dcache_config[1],
+								       mcpat_param->dcache_config[2],
+								       1,mcpat_param->dcache_config[4],
+								      mcpat_param->dcache_config[4], 32, 1));
+    findAndSetValue(icache_node, "param", "buffer_sizes", make_tuple(4,mcpat_param->dcache_buffer_sizes[0],
+								     mcpat_param->dcache_buffer_sizes[1],
+								     mcpat_param->dcache_buffer_sizes[2],
+								     mcpat_param->dcache_buffer_sizes[3]));
+		    
     /* BTB: param tag in the middle that is why double next_sibling() */
     xml_node<> *btb_node = dcache_node->next_sibling()->next_sibling();
     checkNode(btb_node, "system.core0.BTB", "BTB");
