@@ -26,6 +26,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Authors: Marcos Horro Varela
+ *
  */
 %error-verbose
 %{
@@ -73,7 +74,8 @@ void yyrestart(FILE *yyin);
 %token DTB_MISS DTB_ACC	ITB_MISS ITB_ACC
 %token D1_ACC D1_MISS D1_WRACC D1_WRBACK D1_WRMISS D1_WRHITS
 %token I1_ACC I1_MISS I1_WRACC I1_WRBACK I1_WRMISS I1_WRHITS
-%token L2_ACC L2_MISS L2_WRACC L2_WRMISS L2_WRBACK L2_WRBMISS	     				
+%token L2_ACC L2_MISS L2_WRACC L2_WRMISS L2_WRBACK L2_WRBMISS
+%token MM_CHNLS MM_RANKS MM_BSIZE MM_NREADS MM_NWRITES
 %token <t_int> NUM
 %token <t_double> FLOAT
 %token <t_str> STR
@@ -175,6 +177,10 @@ config:
 	|	RLL2 EQ NUM { mcpat_param->l2resp_lat = $3; }		
 	|	MULTALU_LAT EQ NUM { mcpat_param->lat_IntMult = $3; }
 	|	DIVALU_LAT EQ NUM { mcpat_param->lat_IntDiv = $3; }
+	|	MM_CHNLS EQ NUM { mcpat_param->memory_channels_per_mc = $3; }
+	|	MM_RANKS EQ NUM { mcpat_param->number_ranks = $3; }
+	|	MM_BSIZE EQ NUM { mcpat_param->block_size = $3; }
+		
 		
 stats:		DECODINSTS WS NUM { mcpat_stats->total_instructions = $3; }
 	|	BRANCHPRED WS NUM { mcpat_stats->branch_instructions = $3; }
@@ -230,10 +236,29 @@ stats:		DECODINSTS WS NUM { mcpat_stats->total_instructions = $3; }
 	|	L2_WRACC WS NUM { mcpat_stats->WriteReq_access[2] = $3; }
 	|	L2_WRMISS WS NUM { mcpat_stats->WriteReq_misses[2] = $3; }
 	|	L2_WRBACK WS NUM { mcpat_stats->Writeback_accesses[2] = $3; }
-	|	L2_WRBMISS WS NUM { mcpat_stats->Writeback_misses = $3; }		
+	|	L2_WRBMISS WS NUM { mcpat_stats->Writeback_misses = $3; }
+	|	MM_NREADS WS NUM { mcpat_stats->memory_reads = $3; }
+	|	MM_NWRITES WS NUM { mcpat_stats->memory_writes = $3; }		
 	;
 
 %%
+
+/* trying to be kind with memory */
+void free_structs()
+{
+    int i;
+    free(mcpat_param);
+    free(mcpat_stats);
+        for (i=0; i < MAX_NUM; i++) {
+	free(error_list->stat[i]);
+    }
+    for (i=0; i < MAX_NUM; i++) {
+	free(error_list->config[i]);
+    }
+    // removing everything from memory pool!
+    doc.clear();
+}
+
 
 /* finds a concrete tag given the name of the tag (type) the value of
    the attribute name and then sets its value to value */
@@ -246,6 +271,7 @@ void findAndSetValue(xml_node<> *parent, char const *type, char const *name_valu
 		// is this good?
 		cout << "Error: bad structure XML in " << name_value << endl;
 		cout << "Quitting..." << endl;
+		free_structs();
 		exit(-1);
 	    }
 	    // checked before if this attribute exists
@@ -297,7 +323,8 @@ void checkNode(xml_node<> *node, char const *id, char const *value)
     if (node==0) {
 	cout << "Node does not exist!" << endl;
 	cout << error_msg << endl;
-	unlink("out.xml");
+	free_structs();
+	unlink(out_file);
 	exit(0);
     }
 
@@ -308,7 +335,8 @@ void checkNode(xml_node<> *node, char const *id, char const *value)
 	cout << "Found: " << node->first_attribute("id")->value() << " "
 	     << node->first_attribute("name")->value() << endl;
 	cout << error_msg << endl;
-	unlink("out.xml");
+	unlink(out_file);
+	free_structs();
 	exit(0);
     }	
 }
@@ -319,7 +347,7 @@ void xmlParser() throw()
 {
     cout << "Parsing template..." << endl;
     // Read the xml file into a vector
-    ifstream theTemplate ("out.xml");
+    ifstream theTemplate (out_file);
     vector<char> buffer((istreambuf_iterator<char>(theTemplate)), istreambuf_iterator<char>());
     buffer.push_back('\0');
     // Parse the buffer using the xml file parsing library into doc
@@ -428,13 +456,15 @@ void xmlParser() throw()
     xml_node<> *icache_node = itlb_node->next_sibling();
     checkNode(icache_node, "system.core0.icache", "icache");
     findAndSetValue(icache_node, "param", "icache_config", make_tuple(8,mcpat_param->icache_config[0],
-								       mcpat_param->icache_config[1],
+								       32, /* temporal */
 								       mcpat_param->icache_config[2],
-								       1,mcpat_param->icache_config[4],
-								      mcpat_param->icache_config[4], 32, 0));
+								       1,mcpat_param->ihit_lat+mcpat_param->iresp_lat,
+								      mcpat_param->ihit_lat+mcpat_param->iresp_lat, 32, 0));
     findAndSetValue(icache_node, "param", "buffer_sizes", make_tuple(4,mcpat_param->icache_buffer_sizes[0],
 								     mcpat_param->icache_buffer_sizes[1],
 								     mcpat_param->icache_buffer_sizes[2],0));
+    findAndSetIntValue(icache_node, "stat", "read_accesses", mcpat_stats->overall_access[0]-mcpat_stats->WriteReq_access[0]);
+    findAndSetIntValue(icache_node, "stat", "read_misses", mcpat_stats->overall_misses[0]-mcpat_stats->WriteReq_misses[0]);
     
     /* DTLB */
     xml_node<> *dtlb_node = icache_node->next_sibling();
@@ -447,15 +477,19 @@ void xmlParser() throw()
     xml_node<> *dcache_node = dtlb_node->next_sibling();
     checkNode(dcache_node, "system.core0.dcache", "dcache");
     findAndSetValue(dcache_node, "param", "dcache_config", make_tuple(8,mcpat_param->dcache_config[0],
-								       mcpat_param->dcache_config[1],
+								       32, /* temporal */
 								       mcpat_param->dcache_config[2],
-								       1,mcpat_param->dcache_config[4],
-								      mcpat_param->dcache_config[4], 32, 1));
-    findAndSetValue(icache_node, "param", "buffer_sizes", make_tuple(4,mcpat_param->dcache_buffer_sizes[0],
+								       1,mcpat_param->dhit_lat+mcpat_param->dresp_lat,
+								      mcpat_param->dhit_lat+mcpat_param->dresp_lat, 32, 1));
+    findAndSetValue(dcache_node, "param", "buffer_sizes", make_tuple(4,mcpat_param->dcache_buffer_sizes[0],
 								     mcpat_param->dcache_buffer_sizes[1],
 								     mcpat_param->dcache_buffer_sizes[2],
 								     mcpat_param->dcache_buffer_sizes[3]));
-		    
+    findAndSetIntValue(dcache_node, "stat", "read_accesses", mcpat_stats->overall_access[1]-mcpat_stats->WriteReq_access[1]);
+    findAndSetIntValue(dcache_node, "stat", "write_accesses", mcpat_stats->WriteReq_access[1]-mcpat_stats->Writeback_accesses[1]);
+    findAndSetIntValue(dcache_node, "stat", "read_misses", mcpat_stats->overall_misses[1]-mcpat_stats->WriteReq_misses[1]);
+    findAndSetIntValue(dcache_node, "stat", "write_misses", mcpat_stats->WriteReq_access[1]-mcpat_stats->WriteReq_hits[1]);
+    
     /* BTB: param tag in the middle that is why double next_sibling() */
     xml_node<> *btb_node = dcache_node->next_sibling()->next_sibling();
     checkNode(btb_node, "system.core0.BTB", "BTB");
@@ -463,14 +497,24 @@ void xmlParser() throw()
     findAndSetIntValue(btb_node, "stat", "read_accesses", mcpat_stats->btb_read_accesses);
     findAndSetIntValue(btb_node, "stat", "write_accesses", mcpat_stats->btb_write_accesses);
 		    
-    /* L20 CACHE */
-    xml_node<> *l2_node = core_node->next_sibling()->next_sibling()->next_sibling();
+    /* L10 DIR */
+    xml_node<> *l1dir_node = core_node->next_sibling();
+    checkNode(l1dir_node, "system.L1Directory0", "L1Directory0");
+    findAndSetIntValue(l1dir_node, "param", "clockrate", mcpat_param->clock_rate);
+
+    /* L20 DIR */
+    xml_node<> *l2dir_node = l1dir_node->next_sibling();
+    checkNode(l2dir_node, "system.L2Directory0", "L2Directory0");
+    findAndSetIntValue(l2dir_node, "param", "clockrate", mcpat_param->clock_rate);
+
+    /* L20 CACHE */    
+    xml_node<> *l2_node = l2dir_node->next_sibling();
     checkNode(l2_node, "system.L20", "L20");
     findAndSetValue(l2_node, "param", "L2_config", make_tuple(8,mcpat_param->L2_config[0],
 							      mcpat_param->L2_config[1],
 							      mcpat_param->L2_config[2],
-							      1,mcpat_param->L2_config[4],
-							      mcpat_param->L2_config[4], 32, 1));
+							      1,mcpat_param->l2hit_lat + mcpat_param->l2resp_lat,
+							      mcpat_param->l2hit_lat + mcpat_param->l2resp_lat, 32, 1));
     findAndSetValue(l2_node, "param", "buffer_sizes", make_tuple(4,mcpat_param->L2_buffer_sizes[0],
 								     mcpat_param->L2_buffer_sizes[1],
 								     mcpat_param->L2_buffer_sizes[2],
@@ -483,12 +527,22 @@ void xmlParser() throw()
     findAndSetIntValue(l2_node, "stat", "write_misses", mcpat_stats->overall_misses[2]-mcpat_stats->Writeback_misses +
 		                                        mcpat_stats->WriteReq_misses[2]);
 
+    /* TODO: Main memory */
+    xml_node<> *mc_node = l2_node->next_sibling();
+    checkNode(mc_node, "system.mc", "mc");
+    findAndSetIntValue(mc_node, "param", "mc_clock", mcpat_param->clock_rate); 
+    findAndSetIntValue(mc_node, "param", "block_size", mcpat_param->block_size);
+    findAndSetIntValue(mc_node, "param", "memory_channels_per_mc", mcpat_param->memory_channels_per_mc);
+    findAndSetIntValue(mc_node, "param", "number_ranks", mcpat_param->number_ranks);
 
-		    
+    findAndSetIntValue(mc_node, "stat", "memory_accesses", mcpat_stats->memory_reads + mcpat_stats->memory_writes);
+    findAndSetIntValue(mc_node, "stat", "memory_reads", mcpat_stats->memory_reads);
+    findAndSetIntValue(mc_node, "stat", "memory_writes", mcpat_stats->memory_writes);
+
     // finishing message
     cout << BLD "finish filling!" RES << endl;
     std::ofstream output;
-    output.open ("out.xml");
+    output.open(out_file);
     output << doc;
 }
 
@@ -552,10 +606,7 @@ void display_errors()
 int main(int argc, char *argv[])
 {
     printf(BLD "gem5ToMcPAT v%s 2016\n" RES, VERSION);
-    // no arguments
-    if (argc == 1) {
-	usage(0);
-    }
+
     // check options
     int result = handle_options(argc, argv);
     
@@ -571,7 +622,7 @@ int main(int argc, char *argv[])
     }
 
     // copying file
-    copy("template.xml", "out.xml");
+    copy(xml_file, out_file);
     
     // initializing all the structures needed
     init_structs();
@@ -597,9 +648,12 @@ int main(int argc, char *argv[])
     // fill template.xml if no errors
     // otherwise it makes no sense
     if (!ERROR) xmlParser();
-    else unlink("out.xml");
+    else unlink(out_file);
 
     display_errors();
+
+    // free everything
+    free_structs();
 
     // quiting!
     exit(0);
