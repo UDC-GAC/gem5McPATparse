@@ -173,33 +173,26 @@ FILE *config_fptr, *stats_fptr;
 // function headers
 void usage(int i);
 int handle_options(int argc, char **argv);
-char *make_tuple(int value1, int value2);
-char *make_tuple(int value1, int value2, int value3);
+char *make_tuple(int n, int v[]);
 
 // simple function to create a tuple [value],[value]
-char *make_tuple(int value1, int value2)
+
+char *make_tuple(int n, ...)
 {
+    int i;
     char *aux= (char *) malloc(sizeof(char)*80);;
     char str1[50], str2[50];
-    snprintf(str1, 50, "%d", value1);
-    strcat(str1, ",");
-    snprintf(str2, 50, "%d", value2);
-    strcat(str1, str2);
-    strcpy(aux, str1);
-    return aux;
-}
-
-char *make_tuple(int value1, int value2, int value3)
-{
-    char *aux= (char *) malloc(sizeof(char)*80);;
-    char str1[50], str2[50], str3[50];
-    snprintf(str1, 50, "%d", value1);
-    strcat(str1, ",");
-    snprintf(str2, 50, "%d", value2);
-    strcat(str1, str2);
-    strcat(str1, ",");
-    snprintf(str3, 50, "%d", value3);
-    strcat(str1, str3);
+    
+    va_list ap;
+    va_start(ap, n);
+    int v = va_arg(ap, int);
+    for (i=0; i < n-1; i++) {
+	snprintf(str1, 50, "%d", v);
+	strcat(str1, ",");
+	v = va_arg(ap, int);
+	snprintf(str2, 50, "%d", v);
+	strcat(str1, str2);	
+    }
     strcpy(aux, str1);
 
     return aux;
