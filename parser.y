@@ -460,6 +460,8 @@ void xmlParser() throw()
     xml_node<> *btb_node = dcache_node->next_sibling()->next_sibling();
     checkNode(btb_node, "system.core0.BTB", "BTB");
     findAndSetValue(btb_node, "param", "BTB_config", make_tuple(6,mcpat_param->BTB_config,4,2,2,1,1));
+    findAndSetIntValue(btb_node, "stat", "read_accesses", mcpat_stats->btb_read_accesses);
+    findAndSetIntValue(btb_node, "stat", "write_accesses", mcpat_stats->btb_write_accesses);
 		    
     /* L20 CACHE */
     xml_node<> *l2_node = core_node->next_sibling()->next_sibling()->next_sibling();
