@@ -36,7 +36,7 @@ What can be done or improved:
 
 # Bugs
 
-This tool is currently in development, so any bug found you can open an issue.
+This tool is currently in development, so if you find a bug, you can open an issue. If you do not agree with the translation of a parameter or value, please do the same in order to discuss it!
 
 # Limitations
 This first version is focused on the compatibility of the output of memory system and core in gem5 with the input of McPAT. Thus, other components such as PCIe will be ignored by the moment.
