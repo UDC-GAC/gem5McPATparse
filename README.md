@@ -1,4 +1,4 @@
-# gem5ToMcPAT
+0# gem5ToMcPAT
 **[IN DEVELOPMENT]** An attempt to adapt [gem5](http://gem5.org/Main_Page) output to [McPAT](http://www.hpl.hp.com/research/mcpat/) input. This version is implemented in Bison, Flex and C/C++. It also uses the library [RapidXML](http://rapidxml.sourceforge.net/) for C++. Based on Fernando Endo's notes *[1]*, this parser extracts the parameters and statistics from the output of gem5, 'config.ini' and 'stats.txt', and fills the equivalent fields in a XML based on 'template.xml'.
 
 ## Installation
@@ -30,6 +30,7 @@ The template has been adapted for the [last version](https://code.google.com/arc
 What can be done or improved:
 
 * Parse `system.mc` params and statistics
+* Check why dcache `block_size` must be 32 in order to work
 * Code clarity
 * Portability [?]
 
