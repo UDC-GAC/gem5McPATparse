@@ -24,10 +24,6 @@ using namespace std;
 #define VERSION "0.1"
 #endif
 
-#ifndef xml_temp
-#define xml_temp "template.xml"
-#endif
-
 #ifndef MAX
 #define MAX(X,Y) X>Y ? X : Y
 #endif
@@ -87,9 +83,15 @@ struct t_mcpat_params {
     int l2hit_lat;
     int l2resp_lat;
 
-    /* ALUs latencies */
-    int lat_IntDiv = 20; //TODO
-    int lat_IntMult = 3; //TODO
+    /* ALUs latencies (default values) */
+    int lat_IntDiv = 20;
+    int lat_IntMult = 3;
+
+    /* main memory */
+    int memory_channels_per_mc = 1;
+    int number_ranks = 2;
+    int number_mcs = 1; // todo
+    int block_size = 64;
 };
 
 struct t_mcpat_stats {
@@ -145,6 +147,10 @@ struct t_mcpat_stats {
     int WriteReq_misses[3] = {0};
     int Writeback_accesses[3] = {0};
     int Writeback_misses = 0; // l2
+
+    /* main memory */
+    int memory_reads = 0;
+    int memory_writes = 0;
 };
 
 struct t_error {
@@ -157,7 +163,12 @@ struct t_error {
     char *config[MAX_NUM];
 };
 
-FILE *config_fptr, *stats_fptr;
+FILE *config_fptr = NULL;
+FILE *stats_fptr = NULL;
+char xml_file[80] = "template.xml";
+char out_file[80] = "output.xml";
+char conf_file[80] = "config.ini";
+char stats_file[80] = "stats.txt";
 
 // function headers
 void usage(int i);
@@ -169,7 +180,7 @@ char *make_tuple(int n, int v[]);
 char *make_tuple(int n, ...)
 {
     int i;
-    char *aux= (char *) malloc(sizeof(char)*80);;
+    char *aux = (char *) malloc(sizeof(char)*80);
     char str1[50], str2[50];
     
     va_list ap;
