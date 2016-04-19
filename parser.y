@@ -291,13 +291,25 @@ void findAndSetFloatValue(xml_node<> *parent, char const *type, char const *name
 
 void checkNode(xml_node<> *node, char const *id, char const *value)
 {
-    char const *error_msg = "Error in template structure! Quitting";
-    if ((node == 0)||
-	(strcmp(node->first_attribute("id")->value(), id))&&
-	(strcmp(node->first_attribute("name")->value(), value))) {
-	cout << error_msg << "Component " << id << " missing" << endl;
+    char const *error_msg = "Error in template structure! Quitting\n";
+
+    // no lazy comparison possible 
+    if (node==0) {
+	cout << "Node does not exist!" << endl;
+	cout << error_msg << endl;
 	unlink("out.xml");
-	exit(-1);
+	exit(0);
+    }
+
+    // if node is not null, i.e. exists
+    if ((strcmp(node->first_attribute("id")->value(), id))&&
+	(strcmp(node->first_attribute("name")->value(), value))) {
+	cout << "Component " << id << " missing" << endl;
+	cout << "Found: " << node->first_attribute("id")->value() << " "
+	     << node->first_attribute("name")->value() << endl;
+	cout << error_msg << endl;
+	unlink("out.xml");
+	exit(0);
     }	
 }
 
@@ -447,6 +459,11 @@ void xmlParser() throw()
     /* BTB: param tag in the middle that is why double next_sibling() */
     xml_node<> *btb_node = dcache_node->next_sibling()->next_sibling();
     checkNode(btb_node, "system.core0.BTB", "BTB");
+    findAndSetValue(btb_node, "param", "BTB_config", make_tuple(6,mcpat_param->BTB_config,4,2,2,1,1));
+		    
+    /* L20 CACHE */
+    xml_node<> *l2_node = core_node->next_sibling()->next_sibling()->next_sibling();
+    checkNode(l2_node, "system.L20", "L20");
 
     // finishing message
     cout << BLD "finish filling!" RES << endl;
