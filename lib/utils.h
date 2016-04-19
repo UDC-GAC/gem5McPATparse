@@ -186,12 +186,12 @@ char *make_tuple(int n, ...)
     va_list ap;
     va_start(ap, n);
     int v = va_arg(ap, int);
+    snprintf(str1, 50, "%d", v);
     for (i=0; i < n-1; i++) {
-	snprintf(str1, 50, "%d", v);
 	strcat(str1, ",");
 	v = va_arg(ap, int);
 	snprintf(str2, 50, "%d", v);
-	strcat(str1, str2);	
+	strcat(str1, str2);
     }
     strcpy(aux, str1);
 
