@@ -55,7 +55,8 @@ void yyrestart(FILE *yyin);
     /* TOKENS PARAMS */			
 %token EQ WS NL BADTKN
 %token X86 SYSCLK M_MODE			
-%token FETCHW DECODEW ISSUEW COMMITW BASE MAXBASE BUFFERS NIQENTRIES NROBENTRIES NINTREGS NFREGS SQENTRIES LQENTRIES RASSIZE
+%token FETCHW DECODEW ISSUEW COMMITW BASE MAXBASE BUFFERS
+%token NIQENTRIES NROBENTRIES NINTREGS NFREGS SQENTRIES LQENTRIES RASSIZE
 %token LHISTB LCTRB LPREDSIZE GPREDSIZE GCTRB CPREDSIZE	CCTRB
 %token BTBE
 %token TLBD TLBI
@@ -64,7 +65,10 @@ void yyrestart(FILE *yyin);
 %token L2SIZE L2ASSOC L2MSHRS HLL2 RLL2 WBL2 L2BSIZE
 %token MULTALU_LAT DIVALU_LAT			
     /* TOKENS STATS */
-%token DECODINSTS BRANCHPRED BRANCHERR IEWLOAD IEWSTORE	CINT CFP IPC NCYCLES ICYCLES ROBREADS ROBWRITES	RE_INT_LKUP RE_INT_OP RE_FP_LKUP RE_FP_OP IQ_INT_R IQ_INT_W IQ_INT_WA IQ_FP_QR IQ_FP_QW IQ_FP_QWA INT_RG_R INT_RG_W FP_RG_R FP_RG_W COMCALLS INTDIV INTMULT INT_ALU_ACC FP_ALU_ACC
+%token DECODINSTS BRANCHPRED BRANCHERR IEWLOAD IEWSTORE	CINT CFP IPC NCYCLES
+%token ICYCLES ROBREADS ROBWRITES RE_INT_LKUP RE_INT_OP RE_FP_LKUP RE_FP_OP
+%token IQ_INT_R IQ_INT_W IQ_INT_WA IQ_FP_QR IQ_FP_QW IQ_FP_QWA INT_RG_R INT_RG_W
+%token FP_RG_R FP_RG_W COMCALLS INTDIV INTMULT INT_ALU_ACC FP_ALU_ACC
 %token BTBLKUP BTBUP
 %token DTB_MISS DTB_ACC	ITB_MISS ITB_ACC
 %token D1_ACC D1_MISS D1_WRACC D1_WRBACK D1_WRMISS D1_WRHITS
@@ -335,7 +339,7 @@ void xmlParser() throw()
     findAndSetIntValue(core_node, "param", "commit_width", mcpat_param->commit_width);
     if ((mcpat_param->nbase!=4)||(mcpat_param->nmax_base!=4))
 	cout << BLD YEL "Warning: some parameters missing to set properly 'pipeline_depth'!" RES << endl;
-    findAndSetValue(core_node, "param", "pipeline_depth", make_tuple((INT_EXE +
+    findAndSetValue(core_node, "param", "pipeline_depth", make_tuple(2, (INT_EXE +
 									mcpat_param->base_stages +
 								        mcpat_param->max_base),
 								        (FP_EXE +
@@ -393,9 +397,13 @@ void xmlParser() throw()
     /* BRANCH PREDICTOR */
     xml_node<> *bp_node = core_node->first_node("component");
     checkNode(bp_node, "system.core0.predictor", "PBT");
-    findAndSetValue(bp_node, "param", "load_predictor", make_tuple(mcpat_param->load_predictor[0], mcpat_param->load_predictor[1], mcpat_param->load_predictor[2]));
-    findAndSetValue(bp_node, "param", "global_predictor", make_tuple(mcpat_param->global_predictor[0], mcpat_param->global_predictor[1]));
-    findAndSetValue(bp_node, "param", "predictor_chooser", make_tuple(mcpat_param->predictor_chooser[0], mcpat_param->predictor_chooser[1]));
+    findAndSetValue(bp_node, "param", "load_predictor",
+		    make_tuple(3, mcpat_param->load_predictor[0], mcpat_param->load_predictor[1],
+			       mcpat_param->load_predictor[2]));
+    findAndSetValue(bp_node, "param", "global_predictor",
+		    make_tuple(2, mcpat_param->global_predictor[0], mcpat_param->global_predictor[1]));
+    findAndSetValue(bp_node, "param", "predictor_chooser",
+		    make_tuple(2, mcpat_param->predictor_chooser[0], mcpat_param->predictor_chooser[1]));
 
     /* ITLB */
     xml_node<> *itlb_node = bp_node->next_sibling();
