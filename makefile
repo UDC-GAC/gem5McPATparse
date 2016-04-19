@@ -4,7 +4,7 @@ COMP=g++
 XMLTEMPLATE=template.xml
 OUTPUT=out.xml
 CONF=config.ini
-STATS=gem5out.txt
+STATS=stats.txt
 BIN=gem5ToMcPAT
 FLAGS=-lfl -ly -std=c++11
 PARS=parser
