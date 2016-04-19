@@ -22,6 +22,8 @@ int PREV_STATE = -1;
 %x L2
 %x L2TAGS
 
+%x MMEM
+
 %x DELIM			
 %x VALUE
 						
@@ -415,6 +417,29 @@ I1                  "system.cpu.icache."
         return MAXBASE;       
 }
 
+    /* MAIN MEMORY PARAMS */
+<INITIAL>"[system.mem_ctrls]" {
+        BEGIN(MMEM);
+}
+
+<MMEM>"channels" {
+        PREV_STATE = MMEM;
+        BEGIN(VALUE);
+        return MM_CHNLS;
+}
+
+<MMEM>"ranks_per_channel" {
+        PREV_STATE = MMEM;
+        BEGIN(VALUE);
+        return MM_RANKS;
+}
+
+<MMEM>"write_buffer_size" {
+        BEGIN(VALUE);
+        return MM_BSIZE;
+}
+
+
     /* ====== STATISTICS ====== */
 
 <INITIAL>{CPU}"decode.DecodedInsts" {
@@ -710,6 +735,18 @@ I1                  "system.cpu.icache."
     BEGIN(DELIM);
     return L2_WRBMISS;
 }
+
+   /* MAIN MEMORY */
+<INITIAL>{SYS}"mem_ctrls.num_reads::total" {
+    BEGIN(DELIM);
+    return MM_NREADS;
+}
+
+<INITIAL>{SYS}"mem_ctrls.num_writes::total" {
+    BEGIN(DELIM);
+    return MM_NWRITES;
+}
+
 
    /* OBTAINING VALUES DESIRED */
 
