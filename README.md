@@ -1,10 +1,10 @@
-0# gem5ToMcPAT
-**[IN DEVELOPMENT]** An attempt to adapt [gem5](http://gem5.org/Main_Page) output to [McPAT](http://www.hpl.hp.com/research/mcpat/) input. This version is implemented in Bison, Flex and C/C++. It also uses the library [RapidXML](http://rapidxml.sourceforge.net/) for C++. Based on Fernando Endo's notes *[1]*, this parser extracts the parameters and statistics from the output of gem5, 'config.ini' and 'stats.txt', and fills the equivalent fields in a XML based on 'template.xml'.
+# gem5ToMcPAT v0.1
+An attempt to adapt [gem5](http://gem5.org/Main_Page) output to [McPAT](http://www.hpl.hp.com/research/mcpat/) input. This version is implemented in Bison, Flex and C/C++. It also uses the library [RapidXML](http://rapidxml.sourceforge.net/) for C++. Based on Fernando Endo's notes *[1]*, this parser extracts the parameters and statistics from the output of gem5, 'config.ini' and 'stats.txt', and fills the equivalent fields in a XML based on 'template.xml'.
 
-## Installation
-To install this version:
+## Compilation
+To compile this version:
 
-    make install
+    make
 
 ## Running the parser
 To run the parser and generate 'output.xml':
@@ -33,6 +33,10 @@ What can be done or improved:
 * Check why dcache `block_size` must be 32 in order to work
 * Code clarity
 * Portability [?]
+
+# Bugs
+
+This tool is currently in development, so any bug found you can open an issue.
 
 # Limitations
 This first version is focused on the compatibility of the output of memory system and core in gem5 with the input of McPAT. Thus, other components such as PCIe will be ignored by the moment.
