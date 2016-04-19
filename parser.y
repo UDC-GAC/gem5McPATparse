@@ -464,7 +464,25 @@ void xmlParser() throw()
     /* L20 CACHE */
     xml_node<> *l2_node = core_node->next_sibling()->next_sibling()->next_sibling();
     checkNode(l2_node, "system.L20", "L20");
+    findAndSetValue(l2_node, "param", "L2_config", make_tuple(8,mcpat_param->L2_config[0],
+							      mcpat_param->L2_config[1],
+							      mcpat_param->L2_config[2],
+							      1,mcpat_param->L2_config[4],
+							      mcpat_param->L2_config[4], 32, 1));
+    findAndSetValue(l2_node, "param", "buffer_sizes", make_tuple(4,mcpat_param->L2_buffer_sizes[0],
+								     mcpat_param->L2_buffer_sizes[1],
+								     mcpat_param->L2_buffer_sizes[2],
+								     mcpat_param->L2_buffer_sizes[3]));
+    findAndSetIntValue(l2_node, "param", "clockrate", mcpat_param->clock_rate);
+    findAndSetIntValue(l2_node, "stat", "read_accesses", mcpat_stats->overall_access[2]-mcpat_stats->WriteReq_access[2]);
+    findAndSetIntValue(l2_node, "stat", "write_accesses", mcpat_stats->overall_access[2] +
+		       mcpat_stats->Writeback_accesses[2] + mcpat_stats->WriteReq_access[2]);
+    findAndSetIntValue(l2_node, "stat", "read_misses", mcpat_stats->overall_misses[2]-mcpat_stats->WriteReq_misses[2]);
+    findAndSetIntValue(l2_node, "stat", "write_misses", mcpat_stats->overall_misses[2]-mcpat_stats->Writeback_misses +
+		                                        mcpat_stats->WriteReq_misses[2]);
 
+
+		    
     // finishing message
     cout << BLD "finish filling!" RES << endl;
     std::ofstream output;
