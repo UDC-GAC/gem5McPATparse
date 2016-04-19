@@ -83,7 +83,6 @@ struct t_mcpat_params {
     /* cache l2 */
     int L2_config[7];
     int L2_buffer_sizes[4];
-    int l2_clockrate;
     
     int l2hit_lat;
     int l2resp_lat;
@@ -135,16 +134,6 @@ struct t_mcpat_stats {
     int dtlb_total_misses = 0;
     int itlb_total_accesses = 0;
     int itlb_total_misses = 0;
-    /* l1 cache */
-    int l1_read_accesses = 0;
-    int l1_write_accesses = 0;
-    int l1_read_misses = 0;
-    int l1_write_misses = 0;
-    /* l2 cache */
-    int l2_read_accesses = 0;
-    int l2_write_accesses = 0;
-    int l2_read_misses = 0;
-    int l2_write_misses = 0;
 
     /* aux: default values */
     int IntDiv = 0; 
@@ -175,8 +164,8 @@ void usage(int i);
 int handle_options(int argc, char **argv);
 char *make_tuple(int n, int v[]);
 
-// simple function to create a tuple [value],[value]
-
+// simple function to create a tuple with n values
+// like [value1],[value2],...,[valuen]
 char *make_tuple(int n, ...)
 {
     int i;
