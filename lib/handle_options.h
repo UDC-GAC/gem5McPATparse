@@ -72,21 +72,30 @@ static int check_file(char *arg, FILE **f)
 static void handle_long_options(struct option option, char *arg)
 {
 	if (!strcmp(option.name, "help"))
-		usage(0);
+	    usage(0);
 
 	if (!strcmp(option.name, "config")) {
-	        if (!check_file(arg, &config_fptr)) {
-			printf("'%s': invalid file\n", arg);
-			fclose(config_fptr);
-			usage(-3);
-		}
+	    if (!check_file(arg, &config_fptr)) {
+		printf("'%s': invalid file\n", arg);
+		fclose(config_fptr);
+		usage(-3);
+	    }
 	}
+	
 	if (!strcmp(option.name, "stats")) {
-	        if (!check_file(arg, &stats_fptr)) {
-			printf("'%s': invalid file\n", arg);
-			fclose(stats_fptr);
-			usage(-3);
-		}
+	    if (!check_file(arg, &stats_fptr)) {
+		printf("'%s': invalid file\n", arg);
+		fclose(stats_fptr);
+		usage(-3);
+	    }
+	}
+	
+	if (!strcmp(option.name, "xmltemplate")) {
+	    strcpy(xml_file, arg);
+	}
+	
+	if (!strcmp(option.name, "output")) {
+	    strcpy(out_file, arg);
 	}
 }
 
@@ -94,12 +103,13 @@ int handle_options(int argc, char **argv)
 {
 	while (1) {
 		int c;
+		int flags = 0;
 		int option_index = 0;
 
 		c = getopt_long (argc, argv, "x:c:s:o:",
 				 long_options, &option_index);
 		if (c == -1)
-			break;
+		    break;
 
 		switch (c) {
 		case 0:
@@ -122,8 +132,8 @@ int handle_options(int argc, char **argv)
 				usage(-3);
 			}
 			break;
-		case 'x':
-	        case 'o': break;
+		case 'x': strcpy(xml_file, optarg); break;
+	        case 'o': strcpy(out_file, optarg); break;
 		case '?':
 		case 'h':
 			usage(0);
@@ -134,5 +144,6 @@ int handle_options(int argc, char **argv)
 			usage(-1);
 		}
 	}
+	
 	return 0;
 }
