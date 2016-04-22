@@ -465,12 +465,12 @@ I1                  "system.cpu.icache."
     return BRANCHERR;
 }
 
-<INITIAL>{CPU}"iew.iewExecLoadInsts" {
+<INITIAL>{CPU}"iew.iewExecLoadInsts"|{CPU}"num_load_insts" {
     BEGIN(DELIM);
     return IEWLOAD;
 }
 
-<INITIAL>{CPU}"iew.exec_refs" {
+<INITIAL>{CPU}"iew.exec_refs"|{CPU}"num_store_insts" {
     BEGIN(DELIM);
     return IEWSTORE;
 }
@@ -495,7 +495,7 @@ I1                  "system.cpu.icache."
     return NCYCLES;
 }
 
-<INITIAL>{CPU}"idleCycles" {
+<INITIAL>{CPU}"idleCycles"|{CPU}"num_idle_cycles" {
     BEGIN(DELIM);
     return ICYCLES;
 }
