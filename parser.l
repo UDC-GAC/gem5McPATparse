@@ -30,6 +30,7 @@ int PREV_STATE = -1;
 digit   	    [0-9]
 double              {digit}+"."{digit}+			
 letter              [a-zA-Z]
+alphanum            [a-zA-Z0-9]			
 str                 {letter}+			
 ws                  [ ]			
 eq                  "="
@@ -87,15 +88,22 @@ I1                  "system.cpu.icache."
         return M_MODE;
 }
 
-    /* ISA type */
+    /* ISA type. QUITE MESSY... */
 
 <INITIAL>"[system.cpu.isa]\n" {
         BEGIN(ISA);
 }
 
-<ISA>"type=X86ISA" {
+<ISA>"type=" {
+        return ISA_T;
+}
+
+<ISA>{alphanum}+ {
+        /* it is not a real string but it is easier
+           then to compare a string */
+        yylval.t_str = yytext;
         BEGIN(INITIAL);
-        return X86;
+        return STR;
 }
 
     /* core parameters */

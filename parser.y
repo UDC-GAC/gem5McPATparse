@@ -55,7 +55,7 @@ void yyrestart(FILE *yyin);
 }
     /* TOKENS PARAMS */			
 %token EQ WS NL BADTKN
-%token X86 SYSCLK M_MODE			
+%token ISA_T SYSCLK M_MODE			
 %token FETCHW DECODEW ISSUEW COMMITW BASE MAXBASE BUFFERS
 %token NIQENTRIES NROBENTRIES NINTREGS NFREGS SQENTRIES LQENTRIES RASSIZE
 %token LHISTB LCTRB LPREDSIZE GPREDSIZE GCTRB CPREDSIZE	CCTRB
@@ -94,7 +94,7 @@ line : /* empty */
 ;
 
 config:
-                X86 { mcpat_param->isa_x86 = 1; }
+                ISA_T STR { mcpat_param->isa_x86 = !strcmp("X86ISA", $2); }
         |	M_MODE EQ STR { DETAILED = (!strcmp("detailed", $3));}
         |	SYSCLK EQ NUM { mcpat_param->clock_rate = $3; }
 	|	FETCHW EQ NUM { mcpat_param->fetch_width = $3; }
