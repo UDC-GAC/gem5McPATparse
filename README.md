@@ -41,5 +41,7 @@ This tool is currently in development, so if you find a bug, you can open an iss
 # Limitations
 This first version is focused on the compatibility of the output of memory system and core in gem5 with the input of McPAT. Thus, other components such as PCIe will be ignored by the moment.
 
+* Most of translations only work for X86 Architectures. It is needed to find the synonyms for the rest of ISAs 
+
 # References
 *[1]*: [Fernando Akira Endo. Génération dynamique de code pour l’optimisation énergétique. Architectures Matérielles [cs.AR]. Université Grenoble Alpes, 2015. Français. <NNT : 2015GREAM044>. <tel-01285964> (Appendix A)](https://tel.archives-ouvertes.fr/tel-01285964/document)
