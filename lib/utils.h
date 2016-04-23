@@ -166,7 +166,7 @@ struct t_error {
 FILE *config_fptr = NULL;
 FILE *stats_fptr = NULL;
 char xml_file[80] = "template.xml";
-char out_file[80] = "output.xml";
+char out_file[80] = "out.xml";
 char conf_file[80] = "config.ini";
 char stats_file[80] = "stats.txt";
 
