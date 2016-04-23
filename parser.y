@@ -95,7 +95,7 @@ line : /* empty */
 
 config:
                 ISA_T STR { mcpat_param->isa_x86 = !strcmp("X86ISA", $2); }
-        |	M_MODE EQ STR { DETAILED = (!strcmp("detailed", $3));}
+        |	M_MODE EQ STR { DETAILED = (!strcmp("timing", $3));}
         |	SYSCLK EQ NUM { mcpat_param->clock_rate = $3; }
 	|	FETCHW EQ NUM { mcpat_param->fetch_width = $3; }
 	|	DECODEW EQ NUM {
