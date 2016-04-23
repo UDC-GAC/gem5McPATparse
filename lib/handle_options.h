@@ -144,6 +144,22 @@ int handle_options(int argc, char **argv)
 			usage(-1);
 		}
 	}
+
+	if (stats_fptr==NULL) {
+	    if (!check_file(stats_file, &stats_fptr)) {
+		printf("'%s': invalid file\n", stats_file);
+		fclose(stats_fptr);
+		usage(-3);
+	    }
+	}
+
+	if (config_fptr==NULL) {
+	    if (!check_file(conf_file, &config_fptr)) {
+		printf("'%s': invalid file\n", conf_file);
+		fclose(config_fptr);
+		usage(-3);
+	    }
+	}
 	
 	return 0;
 }
