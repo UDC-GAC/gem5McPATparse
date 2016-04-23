@@ -192,6 +192,7 @@ stats:		DECODINSTS WS NUM { mcpat_stats->total_instructions = $3; }
 	|	IPC WS FLOAT { mcpat_stats->pipeline_duty_cycle = $3; }
 	|	NCYCLES WS NUM { mcpat_stats->total_cycles = $3; }
 	|	ICYCLES WS NUM { mcpat_stats->idle_cycles = $3; }
+	|	ICYCLES WS FLOAT { mcpat_stats->idle_cycles = $3; } /*conversion*/
 	|	ROBREADS WS NUM { mcpat_stats->ROB_reads = $3; }			       
 	|	ROBWRITES WS NUM { mcpat_stats->ROB_writes = $3; }
 	|	RE_INT_LKUP WS NUM { mcpat_stats->rename_reads = $3; }
@@ -645,7 +646,7 @@ int main(int argc, char *argv[])
 	printf(BLD YEL "Warning: simulation has not been done in detailed memory mode\n"
 	       "Thus there is a lack of stats and some values will be set to zero\n" RES);
     
-    // fill template.xml if no errors
+    // fill template.xml if zero errors parsing
     // otherwise it makes no sense
     if (!ERROR) xmlParser();
     else unlink(out_file);
