@@ -203,6 +203,7 @@ char stats_file[80] = "stats.txt";
 void usage(int i);
 int handle_options(int argc, char **argv);
 char *make_tuple(int n, int v[]);
+void init_param(t_mcpat_params *p);
 
 // simple function to create a tuple with n values
 // like [value1],[value2],...,[valuen]
@@ -225,4 +226,36 @@ char *make_tuple(int n, ...)
     strcpy(aux, str1);
 
     return aux;
+}
+
+// due to C++11 it is needed to initialize like this
+// the initialization is needed in case the execution
+// does not provide the minimum params for McPAT
+void init_param(t_mcpat_params *p)
+{
+    /* CORE PARAMS */
+    p->fetch_width = 4;
+    p->decode_width = 4;
+    p->issue_width = 4;
+    p->peak_issue_width = 6;
+    p->commit_width = 4;
+    p->instruction_buffer_size = 32;
+    p->instruction_window_size = 64;
+    p->fp_instruction_window_size = 64;
+    p->ROB_size = 128;
+    p->phy_Regs_IRF_size = 256;
+    p->phy_Regs_FRF_size = 256;
+    p->store_buffer_size = 96;
+    p->load_buffer_size = 48;
+    p->RAS_size = 64;
+    /* BTB */
+    p->BTB_config = 4096;
+    /* PBT */
+    p->load_predictor[0] = 10;
+    p->load_predictor[1] = 3;
+    p->load_predictor[2] = 1024;
+    p->global_predictor[0] = 4096;
+    p->global_predictor[1] = 2;
+    p->predictor_predictor[0] = 4096;
+    p->predictor_predictor[1] = 2;
 }
