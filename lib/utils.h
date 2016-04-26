@@ -1,4 +1,33 @@
-// set of libraries needed
+/*
+ * Copyright (c) 2016 Universidade da Coruña
+ * All rights reserved. MIT Licence
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are
+ * met: redistributions of source code must retain the above copyright
+ * notice, this list of conditions and the following disclaimer;
+ * redistributions in binary form must reproduce the above copyright
+ * notice, this list of conditions and the following disclaimer in the
+ * documentation and/or other materials provided with the distribution;
+ * neither the name of the copyright holders nor the names of its
+ * contributors may be used to endorse or promote products derived from
+ * this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Authors: Marcos Horro Varela
+ *
+ */
 
 #include <string.h>
 #include <stdio.h>
@@ -36,20 +65,20 @@ struct t_mcpat_params {
     int isa_x86 = 0;
     /* core parameters */
     int clock_rate;
-    int fetch_width;
-    int decode_width;
-    int issue_width;
-    int peak_issue_width;
-    int commit_width;
-    int instruction_buffer_size;
-    int instruction_window_size;
-    int fp_instruction_window_size;
-    int ROB_size;
-    int phy_Regs_IRF_size;
-    int phy_Regs_FRF_size;
-    int store_buffer_size;
-    int load_buffer_size;
-    int RAS_size;
+    int fetch_width = 4;
+    int decode_width = 4;
+    int issue_width = 4;
+    int peak_issue_width = 6;
+    int commit_width = 4;
+    int instruction_buffer_size = 32;
+    int instruction_window_size = 64;
+    int fp_instruction_window_size = 64;
+    int ROB_size = 128;
+    int phy_Regs_IRF_size = 256;
+    int phy_Regs_FRF_size = 256;
+    int store_buffer_size = 96;
+    int load_buffer_size = 48;
+    int RAS_size = 64;
     /* to calculate base */
     int nbase = 0;
     int base_stages = 0;
