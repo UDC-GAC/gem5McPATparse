@@ -256,6 +256,6 @@ void init_param(t_mcpat_params *p)
     p->load_predictor[2] = 1024;
     p->global_predictor[0] = 4096;
     p->global_predictor[1] = 2;
-    p->predictor_predictor[0] = 4096;
-    p->predictor_predictor[1] = 2;
+    p->predictor_chooser[0] = 4096;
+    p->predictor_chooser[1] = 2;
 }
