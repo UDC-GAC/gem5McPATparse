@@ -561,6 +561,8 @@ void init_structs()
     for (i=0; i < MAX_NUM; i++) {
 	error_list->config[i] = (char *) malloc(MAX_LINE*sizeof(char));
     }
+    
+    init_param(mcpat_param);
 }
 
 /* when 'error' is found in the parser */
