@@ -64,6 +64,7 @@ void yyrestart(FILE *yyin);
 %token IL1SIZE IL1ASSOC I1MSHRS HLIL1 RLIL1 IL1BSIZE
 %token DL1SIZE DL1ASSOC D1MSHRS HLDL1 RLDL1 WBDL1 DL1BSIZE
 %token L2SIZE L2ASSOC L2MSHRS HLL2 RLL2 WBL2 L2BSIZE
+%token L3SIZE L3ASSOC L3MSHRS HLL3 RLL3 WBL3 L3BSIZE
 %token MULTALU_LAT DIVALU_LAT			
     /* TOKENS STATS */
 %token DECODINSTS BRANCHPRED BRANCHERR IEWLOAD IEWSTORE	CINT CFP IPC NCYCLES
@@ -75,6 +76,7 @@ void yyrestart(FILE *yyin);
 %token D1_ACC D1_MISS D1_WRACC D1_WRBACK D1_WRMISS D1_WRHITS
 %token I1_ACC I1_MISS I1_WRACC I1_WRBACK I1_WRMISS I1_WRHITS
 %token L2_ACC L2_MISS L2_WRACC L2_WRMISS L2_WRBACK L2_WRBMISS
+%token L3_ACC L3_MISS L3_WRACC L3_WRMISS L3_WRBACK L3_WRBMISS			
 %token MM_CHNLS MM_RANKS MM_BSIZE MM_NREADS MM_NWRITES
 %token <t_int> NUM
 %token <t_double> FLOAT
@@ -174,7 +176,21 @@ config:
 			mcpat_param->L2_buffer_sizes[2] = $3; }
 	|	WBL2 EQ NUM { mcpat_param->L2_buffer_sizes[3] = $3; }
 	|	HLL2 EQ NUM { mcpat_param->l2hit_lat = $3; }		
-	|	RLL2 EQ NUM { mcpat_param->l2resp_lat = $3; }		
+	|	RLL2 EQ NUM { mcpat_param->l2resp_lat = $3; }
+	|	L3SIZE EQ NUM { mcpat_param->L3_config[0] = $3; }
+	|	L3BSIZE EQ NUM { mcpat_param->L3_config[1] = $3; }		
+	|	L3ASSOC EQ NUM {
+	                mcpat_param->L3_config[2] = $3;
+			mcpat_param->L3_config[3] = 1;
+			mcpat_param->L3_config[5] = 32;
+			mcpat_param->L3_config[6] = 1;}
+	|	L3MSHRS EQ NUM {
+	                mcpat_param->L3_buffer_sizes[0] = $3;
+			mcpat_param->L3_buffer_sizes[1] = $3;
+			mcpat_param->L3_buffer_sizes[2] = $3; }
+	|	WBL3 EQ NUM { mcpat_param->L3_buffer_sizes[3] = $3; }
+	|	HLL3 EQ NUM { mcpat_param->l3hit_lat = $3; }		
+	|	RLL3 EQ NUM { mcpat_param->l3resp_lat = $3; }			
 	|	MULTALU_LAT EQ NUM { mcpat_param->lat_IntMult = $3; }
 	|	DIVALU_LAT EQ NUM { mcpat_param->lat_IntDiv = $3; }
 	|	MM_CHNLS EQ NUM { mcpat_param->memory_channels_per_mc = $3; }
@@ -238,6 +254,12 @@ stats:		DECODINSTS WS NUM { mcpat_stats->total_instructions = $3; }
 	|	L2_WRMISS WS NUM { mcpat_stats->WriteReq_misses[2] = $3; }
 	|	L2_WRBACK WS NUM { mcpat_stats->Writeback_accesses[2] = $3; }
 	|	L2_WRBMISS WS NUM { mcpat_stats->Writeback_misses = $3; }
+	|	L3_ACC WS NUM { mcpat_stats->overall_access[3] = $3; }
+	|	L3_MISS WS NUM { mcpat_stats->overall_misses[3] = $3; }
+	|	L3_WRACC WS NUM { mcpat_stats->WriteReq_access[3] = $3; }
+	|	L3_WRMISS WS NUM { mcpat_stats->WriteReq_misses[3] = $3; }
+	|	L3_WRBACK WS NUM { mcpat_stats->Writeback_accesses[3] = $3; }
+	|	L3_WRBMISS WS NUM { mcpat_stats->Writeback_misses_l3 = $3; }		
 	|	MM_NREADS WS NUM { mcpat_stats->memory_reads = $3; }
 	|	MM_NWRITES WS NUM { mcpat_stats->memory_writes = $3; }		
 	;

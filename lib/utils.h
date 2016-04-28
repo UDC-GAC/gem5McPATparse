@@ -112,6 +112,13 @@ struct t_mcpat_params {
     int l2hit_lat;
     int l2resp_lat;
 
+    /* cache l2 */
+    int L3_config[7];
+    int L3_buffer_sizes[4];
+    
+    int l3hit_lat;
+    int l3resp_lat;
+
     /* ALUs latencies (default values) */
     int lat_IntDiv = 20;
     int lat_IntMult = 3;
@@ -169,13 +176,14 @@ struct t_mcpat_stats {
     /* aux: default values */
     int IntDiv = 0; 
     int IntMult = 0;
-    int overall_access[3] = {0};
-    int overall_misses[3] = {0};
-    int WriteReq_access[3] = {0};
+    int overall_access[4] = {0};
+    int overall_misses[4] = {0};
+    int WriteReq_access[4] = {0};
     int WriteReq_hits[2] = {0}; // i1/d1
-    int WriteReq_misses[3] = {0};
-    int Writeback_accesses[3] = {0};
+    int WriteReq_misses[4] = {0};
+    int Writeback_accesses[4] = {0};
     int Writeback_misses = 0; // l2
+    int Writeback_misses_l3 = 0; // l2
 
     /* main memory */
     int memory_reads = 0;

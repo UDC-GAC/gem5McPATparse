@@ -52,6 +52,9 @@ int PREV_STATE = -1;
 %x L2
 %x L2TAGS
 
+%x L3
+%x L3TAGS
+			
 %x MMEM
 
 %x DELIM			
@@ -96,6 +99,7 @@ BTBEntries          "BTBEntries"
 CPU                 "system.cpu."
 SYS                 "system."
 SL2                 "system.l2."
+SL3                 "system.l3."			
 DTB                 "system.cpu.dtb_walker_cache.tags."
 ITB                 "system.cpu.itb_walker_cache.tags."
 D1                  "system.cpu.dcache."
@@ -411,6 +415,56 @@ I1                  "system.cpu.icache."
 <L2TAGS>"block_size" {
         BEGIN(VALUE);
         return L2BSIZE;
+}
+
+    /* CACHE L3 */
+
+<INITIAL>"[system.l3]" {
+        BEGIN(L3);
+}
+
+<L3>"size" {
+        PREV_STATE = L3;
+        BEGIN(VALUE);
+        return L3SIZE;
+}
+
+<L3>"assoc" {
+        PREV_STATE = L3;
+        BEGIN(VALUE);
+        return L3ASSOC;
+}
+
+<L3>"mshrs" {
+        PREV_STATE = L3;
+        BEGIN(VALUE);
+        return L3MSHRS;
+}
+
+<L3>"hit_latency" {
+        PREV_STATE = L3;
+        BEGIN(VALUE);
+        return HLL3;
+}
+
+<L3>"response_latency" {
+        PREV_STATE = L3;
+        BEGIN(VALUE);
+        return RLL3;
+}
+
+<L3>"write_buffers" {
+        BEGIN(VALUE);
+        return WBL3;
+}
+
+<INITIAL>"[system.l3.tags]" {
+        BEGIN(L3TAGS);
+}
+
+<L3TAGS>"block_size" {
+        BEGIN(VALUE);
+        return L3BSIZE;
 }
 
     /* CALCULATING BASE PARAMETERS (SEE APPENDIX A) */
@@ -772,6 +826,37 @@ I1                  "system.cpu.icache."
 <INITIAL>{SL2}"Writeback_misses::total" {
     BEGIN(DELIM);
     return L2_WRBMISS;
+}
+
+    /* L3 CACHE */
+<INITIAL>{SL3}"overall_accesses::total" {
+    BEGIN(DELIM);
+    return L3_ACC;
+}
+
+<INITIAL>{SL3}"overall_misses::total" {
+    BEGIN(DELIM);
+    return L3_MISS;
+}
+
+<INITIAL>{SL3}"WriteReq_accesses::total" {
+    BEGIN(DELIM);
+    return L3_WRACC;
+}
+
+<INITIAL>{SL3}"WriteReq_misses::total" {
+    BEGIN(DELIM);
+    return L3_WRMISS;
+}
+
+<INITIAL>{SL3}"Writeback_accesses::total" {
+    BEGIN(DELIM);
+    return L3_WRBACK;
+}
+
+<INITIAL>{SL3}"Writeback_misses::total" {
+    BEGIN(DELIM);
+    return L3_WRBMISS;
 }
 
    /* MAIN MEMORY */
