@@ -17,7 +17,7 @@ omitted -->
     <param name="homogeneous_L2s" value="0"/>
     <param name="homogeneous_L1Directories" value="1"/>
     <param name="homogeneous_L2Directories" value="1"/>
-    <param name="homogeneous_L3s" value="0"/>
+    <param name="homogeneous_L3s" value="1"/>
     <param name="homogeneous_ccs" value="1"/><!--cache coherence hardware -->
     <param name="homogeneous_NoCs" value="0"/>
     <param name="core_tech_node" value="32"/><!-- nm -->
@@ -304,6 +304,23 @@ omitted -->
       <param name="ports" value="1,1,1"/>
       <!-- number of r, w, and rw ports -->
       <param name="device_type" value="0"/>
+      <stat name="read_accesses" value="0"/>
+      <stat name="write_accesses" value="0"/>
+      <stat name="read_misses" value="0"/>
+      <stat name="write_misses" value="0"/>
+      <stat name="conflicts" value="0"/>	
+      <stat name="duty_cycle" value="0"/>	
+    </component>
+    <!--**********************************************************************-->
+    <component id="system.L30" name="L30">
+      <param name="L3_config" value="16777216,64,16, 16, 16, 100,1"/>
+      <!-- the parameters are capacity,block_width, associativity,bank, throughput w.r.t. core clock, latency w.r.t. core clock,-->
+      <param name="clockrate" value="800"/>
+      <param name="ports" value="1,1,1"/>
+      <!-- number of r, w, and rw ports -->
+      <param name="device_type" value="0"/>
+      <param name="buffer_sizes" value="16, 16, 16, 16"/>
+      <!-- cache controller buffer sizes: miss_buffer_size(MSHR),fill_buffer_size,prefetch_buffer_size,wb_buffer_size-->	
       <stat name="read_accesses" value="0"/>
       <stat name="write_accesses" value="0"/>
       <stat name="read_misses" value="0"/>

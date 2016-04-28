@@ -112,7 +112,8 @@ struct t_mcpat_params {
     int l2hit_lat;
     int l2resp_lat;
 
-    /* cache l2 */
+    /* cache l3 */
+    int l3_avail = 0;
     int L3_config[7];
     int L3_buffer_sizes[4];
     
@@ -183,7 +184,7 @@ struct t_mcpat_stats {
     int WriteReq_misses[4] = {0};
     int Writeback_accesses[4] = {0};
     int Writeback_misses = 0; // l2
-    int Writeback_misses_l3 = 0; // l2
+    int Writeback_misses_l3 = 0; // l3
 
     /* main memory */
     int memory_reads = 0;
