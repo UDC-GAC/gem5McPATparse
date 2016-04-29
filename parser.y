@@ -164,8 +164,8 @@ config:
 	|	HLIL1 EQ NUM { mcpat_param->ihit_lat = $3; }		
 	|	RLIL1 EQ NUM { mcpat_param->iresp_lat = $3; }	
 	|	L2SIZE EQ NUM { mcpat_param->L2_config[0] = $3; }
-	|	L2BSIZE EQ NUM { mcpat_param->L2_config[1] = $3; }		
-	|	L2ASSOC EQ NUM {
+        |	L2BSIZE EQ NUM { mcpat_param->L2_config[1] = $3; mcpat_param->l2_avail = 1; }
+        |	L2ASSOC EQ NUM {
 	                mcpat_param->L2_config[2] = $3;
 			mcpat_param->L2_config[3] = 1;
 			mcpat_param->L2_config[5] = 32;
@@ -385,7 +385,14 @@ void xmlParser() throw()
     checkNode(sys_node, "system", "system");
     
     /* SYSTEM PARAMS AND STATS */
-    findAndSetIntValue(sys_node, "param", "number_of_L3s", mcpat_param->l3_avail);    
+    findAndSetIntValue(sys_node, "param", "number_of_L2Directories", mcpat_param->l2_avail);
+    findAndSetIntValue(sys_node, "param", "Private_L2", mcpat_param->l2_avail);
+    findAndSetIntValue(sys_node, "param", "number_of_L2s", mcpat_param->l2_avail);
+    findAndSetIntValue(sys_node, "param", "number_of_L3s", mcpat_param->l3_avail);
+    findAndSetIntValue(sys_node, "param", "homogeneous_L3s", mcpat_param->l3_avail);
+    if (mcpat_param->l3_avail) {
+	    findAndSetIntValue(sys_node, "param", "number_cache_levels", 3);
+    }
     findAndSetIntValue(sys_node, "param", "target_core_clockrate", mcpat_param->clock_rate);
     findAndSetIntValue(sys_node, "stat", "total_cycles", mcpat_stats->total_cycles);
     findAndSetIntValue(sys_node, "stat", "idle_cycles", mcpat_stats->idle_cycles);
