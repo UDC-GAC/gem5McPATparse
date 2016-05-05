@@ -681,6 +681,7 @@ int main(int argc, char *argv[])
     // to clean yyin
     yyrestart(yyin);
     yyin = stats_fptr;
+    yylineno = 0;
     yyparse();
     printf("[stats.txt]: finished parsing!\n");
     fclose(yyin);
