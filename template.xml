@@ -8,18 +8,18 @@ omitted -->
     <!--McPAT will skip the components if number is set to 0 -->
     <param name="number_of_cores" value="1"/>
     <param name="number_of_L1Directories" value="1"/>
-    <param name="number_of_L2Directories" value="1"/>
-    <param name="number_of_L2s" value="1"/> <!-- This number means how many L2 clusters in each cluster there can be multiple banks/ports -->
-    <param name="Private_L2" value="1"/><!--1 Private, 0 shared/coherent -->
+    <param name="number_of_L2Directories" value="0"/>
+    <param name="number_of_L2s" value="0"/> <!-- This number means how many L2 clusters in each cluster there can be multiple banks/ports -->
+    <param name="Private_L2" value="0"/><!--1 Private, 0 shared/coherent -->
     <param name="number_of_L3s" value="0"/> <!-- This number means how many L3 clusters -->
     <param name="number_of_NoCs" value="0"/>
     <param name="homogeneous_cores" value="1"/><!--1 means homo -->
-    <param name="homogeneous_L2s" value="0"/>
+    <param name="homogeneous_L2s" value="1"/>
     <param name="homogeneous_L1Directories" value="1"/>
     <param name="homogeneous_L2Directories" value="1"/>
     <param name="homogeneous_L3s" value="1"/>
     <param name="homogeneous_ccs" value="1"/><!--cache coherence hardware -->
-    <param name="homogeneous_NoCs" value="0"/>
+    <param name="homogeneous_NoCs" value="1"/>
     <param name="core_tech_node" value="32"/><!-- nm -->
     <param name="target_core_clockrate" value="1000"/><!--MHz -->
     <param name="temperature" value="380"/> <!-- Kelvin -->

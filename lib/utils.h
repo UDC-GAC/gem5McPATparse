@@ -106,6 +106,7 @@ struct t_mcpat_params {
     int iresp_lat;
     
     /* cache l2 */
+    int l2_avail = 0;	
     int L2_config[7];
     int L2_buffer_sizes[4];
     
