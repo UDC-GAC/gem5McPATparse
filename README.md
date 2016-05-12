@@ -1,4 +1,4 @@
-# gem5ToMcPAT v0.1
+# gem5McPATparse v0.1
 An attempt to adapt [gem5](http://gem5.org/Main_Page) output to [McPAT](http://www.hpl.hp.com/research/mcpat/) input. This version is implemented in Bison, Flex and C/C++. It also uses the library [RapidXML](http://rapidxml.sourceforge.net/) for C++. Based on Fernando Endo's notes *[1]*, this parser extracts the parameters and statistics from the output of gem5, 'config.ini' and 'stats.txt', and fills the equivalent fields in a XML based on 'template.xml'.
 
 ## Compilation
@@ -13,12 +13,12 @@ To run the parser and generate 'output.xml':
 
 It is also possible to run as (all these options are mandatory):
 
-    ./gem5ToMcPAT -x <template_file> -c <config_file> -s <stats_file> -o <output_file>
-    ./gem5ToMcPAT --xmltempalte <template_file> --config <config_file> --stats <stats_file> --output <output_file>
+    ./gem5McPATparse -x <template_file> -c <config_file> -s <stats_file> -o <output_file>
+    ./gem5McPATparse --xmltempalte <template_file> --config <config_file> --stats <stats_file> --output <output_file>
 
 In order to get help from the program:
 
-    ./gem5ToMcPAT -h
+    ./gem5McPATparse -h
 
 ## Software needed
 It has been tested in a Linux distribution with `gcc version 5.2.1`, `bison version 3.0.2`, `flex 2.5.39` and `make 4.0`
