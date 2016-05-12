@@ -5,7 +5,7 @@ XMLTEMPLATE=template.xml
 OUTPUT=out.xml
 CONF=config.ini
 STATS=stats.txt
-BIN=gem5ToMcPAT
+BIN=gem5McPATparse
 FLAGS=-lfl -ly -std=c++11
 PARS=parser
 .PHONY: compile run clean

@@ -606,8 +606,6 @@ void init_structs()
     error_list = (struct t_error *) malloc(sizeof(struct t_error));
     for (i=0; i < MAX_NUM; i++) {
 	error_list->stat[i] = (char *) malloc(MAX_LINE*sizeof(char));
-    }
-    for (i=0; i < MAX_NUM; i++) {
 	error_list->config[i] = (char *) malloc(MAX_LINE*sizeof(char));
     }
     
@@ -623,8 +621,7 @@ void yyerror(const char *s, ...)
     printf("%d: error: %s\n", yylineno, s);
     if (yyin == config_fptr) {
 	error_list->config[error_list->n_config] = strdup(s);
-	error_list->config_l[error_list->n_config++] = yylineno;
-        
+	error_list->config_l[error_list->n_config++] = yylineno;        
     } else if (yyin == stats_fptr) {
 	error_list->stat[error_list->n_stat] = strdup(s);
 	error_list->stat_l[error_list->n_stat++] = yylineno;
