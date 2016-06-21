@@ -328,6 +328,23 @@ omitted -->
       <stat name="conflicts" value="0"/>	
       <stat name="duty_cycle" value="0"/>	
     </component>
+    <!-- TODO: NOC -->
+    <component id="system.NoC0" name="noc0">
+      <param name="clockrate" value="2000"/>
+      <param name="type" value="0"/>
+      <param name="horizontal_nodes" value="1"/>
+      <param name="vertical_nodes" value="1"/>
+      <param name="has_global_link" value="0"/>
+      <param name="link_throughput" value="1"/>
+      <param name="link_latency" value="1"/>
+      <param name="input_ports" value="1"/>
+      <param name="output_ports" value="1"/>
+      <param name="flit_bits" value="64"/>
+      <param name="chip_coverage" value="1"/>
+      <param name="link_routing_over_percentage" value="0.5"/>
+      <stat name="total_accesses" value="100000"/>
+      <stat name="duty_cycle" value="0.2"/>
+    </component>
     <!--**********************************************************************-->
     <component id="system.mc" name="mc">
       <!-- PARAMETERS TAKEN FROM DDR3 GEM5 -->
