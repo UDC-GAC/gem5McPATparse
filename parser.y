@@ -576,9 +576,14 @@ void xmlParser() throw()
 		       mcpat_stats->Writeback_accesses[3] + mcpat_stats->WriteReq_access[3]);
     findAndSetIntValue(l3_node, "stat", "read_misses", mcpat_stats->overall_misses[3]-mcpat_stats->WriteReq_misses[3]);
     findAndSetIntValue(l3_node, "stat", "write_misses", mcpat_stats->overall_misses[3]-mcpat_stats->Writeback_misses_l3 +
-		                                        mcpat_stats->WriteReq_misses[3]);    
+		                                        mcpat_stats->WriteReq_misses[3]);
+
+    /* TODO: NoC */
+    xml_node<> *noc_node = l3_node->next_sibling();
+    checkNode(noc_node, "system.NoC0", "noc0");
+    
     /* Main memory */
-    xml_node<> *mc_node = l3_node->next_sibling();
+    xml_node<> *mc_node = noc_node->next_sibling();
     checkNode(mc_node, "system.mc", "mc");
     findAndSetIntValue(mc_node, "param", "mc_clock", mcpat_param->clock_rate); 
     findAndSetIntValue(mc_node, "param", "block_size", mcpat_param->block_size);
@@ -672,6 +677,7 @@ int main(int argc, char *argv[])
 
     // copying file
     copy(xml_file, out_file);
+    sleep(1);
     
     // initializing all the structures needed
     init_structs();
