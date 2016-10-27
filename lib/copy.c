@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 Universidade da Coruña
+ * Copyright (c) 2016 Marcos Horro
  * All rights reserved. MIT Licence
  *
  * Redistribution and use in source and binary forms, with or without
