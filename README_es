@@ -1,0 +1,47 @@
+gem5ToMcPAT v0.1
+================
+
+Esta herramienta nace con la intención de acoplar la salida de gem5
+a la herramienta McPAT. El funcionamiento de este parser se basa en
+la entrada de dos ficheros salida de gem5, de la configuración y las
+estadísticas de la ejecución, y una template en XML modelo del input
+de McPAT. Así éste generará un fichero a partir de los anteriores
+válido como input del modelador de energías McPAT.
+
+Una ejecución típica sería la siguiente:
+
+       ./gem5ToMcPAT -x template.xml -c config.ini -s stats.txt -o out.xml
+
+Los nombres que se han utilizado hablan por sí mismos y no creo que
+merezcan mayor explicación.
+
+Gestión de errores:
+===================
+El parseador no parará el parsing de los ficheros si se encuentra
+algún error. Esta continuidad hasta EOF se debe a que se prefiere
+encontrar todos los errores posibles hasta final de fichero. Con
+todo, en caso de encontrarse algún error, el parser no generará
+ningún fichero de salida, pues probablemente fuese erróneo. En su
+lugar mostrará por pantalla una salida con todos los errores encon-
+trados en ambos ficheros de configuración. Si la template no fuese
+válida, el parseador también pararía la ejecución, es por ello que
+por defecto se da esta template al usuario.
+
+Warnings:
+=========
+Dado que gem5 es un framework muy complejo y tiene diferentes modos
+de funcionamiento, sus salidas pueden ser más o menos detalladas.
+Así es posible que algunas ejecuciones, las salidas carezcan de al-
+gún parámetro. Por defecto, el parser inicializa todos los parámetros
+que considera necesarios a cero, en caso de que su valor siga siendo
+cero a la horar de escribirlo en la salida.
+
+OTROS:
+======
+Como se puede ver, en todas las cabeceras de los fuente se encutra la
+licencia de código libre. Dado que este parser está pensado para
+la comunidad de gem5, he decidido subirlo a un repositorio abierto [1].
+El feedback ha sido en general bueno [2].
+
+[1] https://github.com/markoshorro/gem5McPATparse
+[2] https://www.mail-archive.com/gem5-users@gem5.org/msg12867.html (ver el thread)
